@@ -1,0 +1,456 @@
+const express = require('express');
+const app = express();
+const authentication = require('./controller/authentication');
+const clientes = require('./controller/clientes');
+const mensalidades = require('./controller/mensalidades');
+const planos = require('./controller/planos');
+const servicos = require('./controller/servicos');
+const users = require('./controller/users');
+const contratos = require('./controller/contratos');
+const multer = require('multer');
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+const arquivos = require('./controller/arquivos');
+const carne = require('./controller/Efi/carne');
+const assinatura = require('./controller/Efi/assinatura');
+const pix = require('./controller/Efi/pix');
+const cobrancaWhatsapp = require('./controller/cobrancaWhatsApp');
+const schedule = require('node-schedule');
+const { verificarToken, havePermissionAdministrador, havePermissionEditor, havePermissionVendedor } = require('./controller/authentication');
+const cors = require("cors");
+const corsOptions = {
+    origin: '*',
+    credentials: true,            //access-control-allow-credentials:true
+    optionSuccessStatus: 200,
+}
+app.use(cors(corsOptions))
+app.use(express.json());
+app.use(express.text())
+app.use(express.urlencoded({ extended: true }));
+
+
+//Login
+app.post('/login', async (req, res) => {
+    try {
+        const user = req.body;
+        const data = await authentication.getUser(user);
+        if (data) {
+            res.json(data);
+        } else {
+            res.status(400).json({ message: 'Usuário ou senha inválidos' });
+        }
+    } catch (error) {
+        res.status(400).json({ message: 'Usuário ou senha inválidos' });
+    }
+})
+app.get('/', (req, res) => {
+    res.send('Hello World!');
+});
+
+app.get('/isLogged', async (req, res) => {
+    const token = req.header('x-access-token');
+    if (!token) return res.status(400).json({ message: 'Usuário não autenticado' });
+    try {
+        const data = await authentication.isLogged(token);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'Usuário não autenticado' });
+    }
+})
+
+
+//Usuários
+app.get('/users/getUsers', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const data = await users.getUsers();
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+app.get('/users/getUsersType', verificarToken, async (req, res) => {
+    try {
+        const query = req.query;
+        const data = await users.getUsersType(query.type);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+app.post('/users/adduser', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const dataReceived = req.body;
+        const data = await users.AddUser(dataReceived);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+app.put('/users/updateuser', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const dataReceived = req.body;
+        const data = await users.UpdateUser(dataReceived);
+        res.json(data);
+    } catch (error) {
+        res.json({ message: 'error' });
+    }
+})
+app.delete('/users/delete/:id', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const id = req.params.id;
+        const data = await users.DeleteUser(id);
+        res.json(data);
+    } catch (error) {
+        res.json({ message: 'error' });
+    }
+})
+
+
+//Mensalidades
+app.get('/mensalidades/getMensalidadesAtrasadas', verificarToken, async (req, res) => {
+    try {
+        const dataReceived = req.params.id;
+        const data = await mensalidades.getMensalidadesAtrasadas();
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+app.get('/mensalidades/getAllMensalidades/:id', verificarToken, async (req, res) => {
+    try {
+        const dataReceived = req.params.id;
+        const data = await mensalidades.getTodasMensalidades(dataReceived);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+
+app.put('/mensalidades/pagarMensalidade/:id', verificarToken, async (req, res) => {
+    try {
+        const id = req.params.id;
+        const dataBody = req.body;
+        const data = await mensalidades.pagarMensalidade(id, dataBody);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+app.put('/mensalidades/updateValue/:id', verificarToken, async (req, res) => {
+    try {
+        const id = req.params.id;
+        const valor = req.body.valor;
+        const data = await mensalidades.updateValue(id, valor);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+
+app.post('/mensalidades/gerarMensalidades', verificarToken, async (req, res) => {
+    try {
+        const data = await mensalidades.gerarMensalidade(req.body);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+
+app.post('/mensalidades/gerarMensalidadeUnica', verificarToken, async (req, res) => {
+    try {
+        const data = await mensalidades.gerarMensalidadeUnica(req.body);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+
+//Planos
+app.get('/planos/getAllPlanos', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const data = await planos.getPlanos();
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+app.post('/planos/addPlano', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const data = req.body;
+        const result = await planos.addPlano(data);
+        res.json(result);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+app.put('/planos/updatePlano/:id', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const data = req.body;
+        const id = req.params.id;
+        const result = await planos.updatePlano(data, id);
+        res.json(result);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+
+//Clientes
+app.get('/clientes/getCliente/:id', verificarToken, async (req, res) => {
+    try {
+        const dataReceived = req.params.id;
+        const data = await clientes.getCliente(dataReceived);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+app.get('/clientes/getClientes', verificarToken, async (req, res) => {
+    try {
+        const data = await clientes.getClientes();
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+
+app.get('/clientes/getClientesByQuery', verificarToken, async (req, res) => {
+    try {
+        const dataReceived = req.query;
+        const data = await mensalidades.getClientesByQuery(dataReceived);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+app.post('/clientes/addcliente', verificarToken, async (req, res) => {
+    try {
+        const dataReceived = req.body;
+        const data = await clientes.AddCliente(dataReceived);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+app.put('/clientes/updateCliente', verificarToken, async (req, res) => {
+    try {
+        const dataReceived = req.body;
+        const data = await clientes.UpdateCliente(dataReceived);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+
+//Contratos
+app.get('/contratos/getContratos/:id', verificarToken, async (req, res) => {
+    try {
+        const idUser = req.params.id;
+        const data = await contratos.getContratos(idUser);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+app.post('/contratos/addContrato', verificarToken, async (req, res) => {
+    try {
+        const dataBody = req.body;
+        const data = await contratos.addContrato(dataBody);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+app.post('/contratos/uploadContrato/:id', verificarToken, upload.single('file'), async (req, res) => {
+    try {
+        const id = req.params.id;
+        const file = req.file;
+        const data = await contratos.uploadContrato(id, file);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'Erro ao fazer upload do arquivo' });
+    }
+});
+
+app.post('/contratos/uploadArquivo/:id', verificarToken, upload.single('file'), async (req, res) => {
+    try {
+        const name = req.body;
+        const id = req.params.id;
+        const file = req.file;
+        const data = await contratos.uploadArquivo(name, id, file);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'Erro ao fazer upload do arquivo' });
+    }
+});
+
+app.put('/contratos/updateDependente/:id', verificarToken, async (req, res) => {
+    try {
+        const id = req.params.id;
+        const data = req.body;
+        const result = await contratos.updateDependente(data, id);
+        res.json(result);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+app.put('/contratos/updateContrato/:id', verificarToken, async (req, res) => {
+    try {
+        const id = req.params.id;
+        const data = req.body;
+        const result = await contratos.updateContrato(data, id);
+        res.json(result);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+});
+
+
+//-----------------------------------------------------------Arquivos-----------------------------------------------------------------------
+app.post('/arquivos/:id', verificarToken, upload.single('file'), async (req, res) => {
+    try {
+        const dataBody = JSON.parse(req.body.data);
+        let dataAux = {
+            nome: dataBody.nome,
+            type: dataBody.tipo,
+            arquivos: dataBody.arquivos
+        };
+        const id = req.params.id;
+        const file = req.file;
+        const data = await arquivos.uploadArquivo(dataBody, id, file);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'Erro ao fazer upload do arquivo' });
+    }
+});
+app.get('/arquivos/getArquivo/:id', verificarToken, async (req, res) => {
+    try {
+        const id = req.params.id;
+        const data = await arquivos.getArquivo(id);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+
+
+//-----------------------------------------------------------Serviços-----------------------------------------------------------------------
+app.get('/servicos/getAllServicos', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const data = await servicos.getServicos();
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+
+app.post('/servicos/addServicos', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const dataBody = req.body;
+        const data = await servicos.addServicos(dataBody);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+
+app.put('/servicos/updateServicos', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const data = await servicos.updateServicos();
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+
+
+//-----------------------------------------------------------Carne-----------------------------------------------------------------------
+app.post('/carne/gerarCarne', verificarToken, async (req, res) => {
+    try {
+        const data = await carne.createCarneEfi(req.body);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+
+app.post('/carne/changeStatus', async (req, res) => {
+    try {
+        const inputData = req.body;
+        let token;
+        if (typeof inputData.notification === 'string') {
+            token = inputData.notification;
+        } else if (typeof inputData.notification === 'object' && inputData.notification.token) {
+            token = inputData.notification.token;
+        } else {
+            token = requestId;
+        }
+        const outputJSON = {
+            "token": token,
+        };
+
+        const data = await carne.listenCarne(outputJSON);
+
+        res.json('foi');
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+});
+
+
+//-----------------------------------------------------------Assinatura-----------------------------------------------------------------------
+app.post('/assinatura/gerarLinkAssinatura', async (req, res) => {
+    try {
+        const data = await assinatura.criarLinkAssinatura(req.body);
+        res.json({ message: 'foi' });
+    }
+    catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+});
+
+
+//-----------------------------------------------------------Gerar Links de Pagamento-----------------------------------------------------------------------
+
+app.post('/gerarLink/pix', verificarToken, async (req, res) => {
+    try {
+        const data = await pix.gerarPiximediato(req.body);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: error});
+    }
+})
+
+//-----------------------------------------------------------Cobrança-----------------------------------------------------------------------
+// const job = schedule.scheduleJob('16 12 * * *', async function() {
+//     //Pega Cobranca do Dia
+//     // const cobrancaDoDia = await cobrancaWhatsapp.enviaCobrancaWhatsapp(); 
+    
+//     const data = await cobrancaWhatsapp.enviaCobrancaWhatsapp(req.body);
+//     // cobranca.cobrancaEmail(data);
+//   });
+
+
+app.post('/cobranca/gerarCobranca', async (req, res) => {
+    try {
+        const data = await cobrancaWhatsapp.enviaCobrancaWhatsapp(req.body);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+
+
+app.post('/whatsapp/logar', async (req, res) => {
+    try {
+        const data = await cobrancaWhatsapp.logarWhatsApp();
+        console.log(data);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+
+const port = process.env.PORT || 6001;
+const server = app.listen(port, () => {
+    console.log('Order API is running at ' + port);
+});

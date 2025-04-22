@@ -1,0 +1,4 @@
+2025/04/09-15:59:13.444 848c Creating DB C:\Users\guilh\OneDrive\Documentos\GitHub\Api-Nippon-Prod\sessions\session\Default\File System\Origins since it was missing.
+2025/04/09-15:59:13.449 848c Reusing MANIFEST C:\Users\guilh\OneDrive\Documentos\GitHub\Api-Nippon-Prod\sessions\session\Default\File System\Origins/MANIFEST-000001
+2025/04/09-15:59:13.451 848c Recovering log #3
+2025/04/09-15:59:13.452 848c Reusing old log C:\Users\guilh\OneDrive\Documentos\GitHub\Api-Nippon-Prod\sessions\session\Default\File System\Origins/000003.log 
