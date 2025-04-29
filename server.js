@@ -15,6 +15,7 @@ const carne = require('./controller/Efi/carne');
 const assinatura = require('./controller/Efi/assinatura');
 const pix = require('./controller/Efi/pix');
 const cobrancaWhatsapp = require('./controller/cobrancaWhatsApp');
+const pedidosFunerais = require('./controller/pedidosFuneral');
 const schedule = require('node-schedule');
 const { verificarToken, havePermissionAdministrador, havePermissionEditor, havePermissionVendedor } = require('./controller/authentication');
 const cors = require("cors");
@@ -450,6 +451,54 @@ app.post('/whatsapp/logar', async (req, res) => {
     }
 })
 
+//-----------------------------------------------------------Pedido Funeral-----------------------------------------------------------------------//
+app.get('/api/pedidosFunerais/:idCliente',verificarToken, async (req, res) => {
+    const pedidos = await pedidosFunerais.getPedidosFunerais(req.params.idCliente);
+    if (pedidos) {
+        res.status(200).json(pedidos);
+    } else {
+        res.status(404).json({ message: 'Nenhum pedido encontrado' });
+    }
+});
+
+app.post('/api/pedidosFunerais',verificarToken, async (req, res) => {
+    const data = req.body;
+    const id = await pedidosFunerais.addPedidosFunerais(data);
+    if (id) {
+        res.status(201).json({ message: 'Pedido criado com sucesso', id });
+    } else {
+        res.status(500).json({ message: 'Erro ao criar o pedido' });
+    }
+});
+
+app.put('/api/pedidosFunerais/:id',verificarToken, havePermissionAdministrador, async (req, res) => {
+    const success = await pedidosFunerais.updatePedidosFunerais(req.params.id, req.body);
+    if (success) {
+        res.status(200).json({ message: 'Pedido atualizado com sucesso' });
+    } else {
+        res.status(500).json({ message: 'Erro ao atualizar o pedido' });
+    }
+});
+
+app.delete('/api/pedidosFunerais/:id',verificarToken, havePermissionAdministrador, async (req, res) => {
+    const success = await pedidosFunerais.deletePedidosFunerais(req.params.id);
+    if (success) {
+        res.status(200).json({ message: 'Pedido deletado com sucesso' });
+    } else {
+        res.status(500).json({ message: 'Erro ao deletar o pedido' });
+    }
+});
+
+app.get('/api/relatorioPedido/:id',verificarToken, async (req, res) => {
+    const relatorio = await generateRelatorioPedido(req.params.id);
+    if (relatorio) {
+        res.status(200).json(relatorio);
+    } else {
+        res.status(404).json({ message: 'Pedido não encontrado' });
+    }
+});
+
+//------------------Door----------------------//
 const port = process.env.PORT || 6001;
 const server = app.listen(port, () => {
     console.log('Order API is running at ' + port);
