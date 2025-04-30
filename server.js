@@ -7,6 +7,7 @@ const planos = require('./controller/planos');
 const servicos = require('./controller/servicos');
 const users = require('./controller/users');
 const contratos = require('./controller/contratos');
+const guiaMedico = require('./controller/guiaMedico');
 const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -490,11 +491,78 @@ app.delete('/api/pedidosFunerais/:id',verificarToken, havePermissionAdministrado
 });
 
 app.get('/api/relatorioPedido/:id',verificarToken, async (req, res) => {
-    const relatorio = await generateRelatorioPedido(req.params.id);
+    const relatorio = await pedidosFunerais.generateRelatorioPedido(req.params.id);
     if (relatorio) {
         res.status(200).json(relatorio);
     } else {
         res.status(404).json({ message: 'Pedido não encontrado' });
+    }
+});
+
+//-----------------------------------------------------------Guia Médico-----------------------------------------------------------------------//
+app.get('/api/guiasMedicos', verificarToken, async (req, res) => {
+    try {
+        const guias = await guiaMedico.getGuiasMedicos();
+        if (guias) {
+            res.status(200).json(guias);
+        } else {
+            res.status(404).json({ message: 'Nenhum guia médico encontrado' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao buscar guias médicos' });
+    }
+});
+
+app.get('/api/guiasMedicos/:id', verificarToken, async (req, res) => {
+    try {
+        const guia = await guiaMedico.getGuiaMedico(req.params.id);
+        if (guia) {
+            res.status(200).json(guia);
+        } else {
+            res.status(404).json({ message: 'Guia médico não encontrado' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao buscar guia médico' });
+    }
+});
+
+app.post('/api/guiasMedicos', verificarToken, async (req, res) => {
+    try {
+        const data = req.body;
+        const guia = await guiaMedico.addGuiaMedico(data);
+        if (guia) {
+            res.status(201).json({ message: 'Guia médico criado com sucesso', guia });
+        } else {
+            res.status(500).json({ message: 'Erro ao criar guia médico' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao criar guia médico' });
+    }
+});
+
+app.put('/api/guiasMedicos/:id', verificarToken, async (req, res) => {
+    try {
+        const success = await guiaMedico.updateGuiaMedico(req.body);
+        if (success) {
+            res.status(200).json({ message: 'Guia médico atualizado com sucesso' });
+        } else {
+            res.status(500).json({ message: 'Erro ao atualizar guia médico' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao atualizar guia médico' });
+    }
+});
+
+app.delete('/api/guiasMedicos/:id', verificarToken, async (req, res) => {
+    try {
+        const success = await guiaMedico.deleteGuiaMedico(req.params.id);
+        if (success) {
+            res.status(200).json({ message: 'Guia médico deletado com sucesso' });
+        } else {
+            res.status(500).json({ message: 'Erro ao deletar guia médico' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao deletar guia médico' });
     }
 });
 
