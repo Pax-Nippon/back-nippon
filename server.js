@@ -526,6 +526,20 @@ app.get('/api/guiasMedicos/:id', verificarToken, async (req, res) => {
     }
 });
 
+app.get('/api/guiasMedicos/user/:id', verificarToken, async (req, res) => {
+    try {
+        const guias = await guiaMedico.getGuiasMedicosByUserId(req.params.id);
+        if (guias) {
+            res.status(200).json(guias);
+        } else {
+            res.status(404).json({ message: 'Nenhum guia médico encontrado' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao buscar guias médicos' });
+    }
+}); 
+
+
 app.post('/api/guiasMedicos', verificarToken, async (req, res) => {
     try {
         const data = req.body;
