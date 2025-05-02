@@ -17,6 +17,7 @@ const assinatura = require('./controller/Efi/assinatura');
 const pix = require('./controller/Efi/pix');
 const cobrancaWhatsapp = require('./controller/cobrancaWhatsApp');
 const pedidosFunerais = require('./controller/pedidosFuneral');
+const departamentos = require('./controller/departamentos');
 const schedule = require('node-schedule');
 const { verificarToken, havePermissionAdministrador, havePermissionEditor, havePermissionVendedor } = require('./controller/authentication');
 const cors = require("cors");
@@ -506,10 +507,10 @@ app.get('/api/guiasMedicos', verificarToken, async (req, res) => {
         if (guias) {
             res.status(200).json(guias);
         } else {
-            res.status(404).json({ message: 'Nenhum guia médico encontrado' });
+            res.status(404).json({ message: 'Nenhum guia médica encontrada' });
         }
     } catch (error) {
-        res.status(500).json({ message: 'Erro ao buscar guias médicos' });
+        res.status(500).json({ message: 'Erro ao buscar guias médicas' });
     }
 });
 
@@ -519,10 +520,10 @@ app.get('/api/guiasMedicos/:id', verificarToken, async (req, res) => {
         if (guia) {
             res.status(200).json(guia);
         } else {
-            res.status(404).json({ message: 'Guia médico não encontrado' });
+            res.status(404).json({ message: 'Guia médica não encontrada' });
         }
     } catch (error) {
-        res.status(500).json({ message: 'Erro ao buscar guia médico' });
+        res.status(500).json({ message: 'Erro ao buscar guia médica' });
     }
 });
 
@@ -563,6 +564,68 @@ app.delete('/api/guiasMedicos/:id', verificarToken, async (req, res) => {
         }
     } catch (error) {
         res.status(500).json({ message: 'Erro ao deletar guia médico' });
+    }
+});
+
+//------------------Departamento----------------------//
+
+// Rota para listar todos os departamentos
+app.get('/api/departamentos', verificarToken, async (req, res) => {
+    try {
+        const data = await departamentos.getDepartamentos();
+        if (data) {
+            res.status(200).json(data);
+        } else {
+            res.status(404).json({ message: 'Nenhum departamento encontrado' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao listar departamentos' });
+    }
+});
+
+// Rota para criar um novo departamento
+app.post('/api/departamentos', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const { nome } = req.body;
+        const id = await departamentos.addDepartamento(nome);
+        if (id) {
+            res.status(201).json({ message: 'Departamento criado com sucesso', id });
+        } else {
+            res.status(500).json({ message: 'Erro ao criar departamento' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao criar departamento' });
+    }
+});
+
+// Rota para atualizar um departamento existente
+app.put('/api/departamentos/:id', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const { nome } = req.body;
+        const id = req.params.id;
+        const success = await departamentos.updateDepartamento(id, nome);
+        if (success) {
+            res.status(200).json({ message: 'Departamento atualizado com sucesso' });
+        } else {
+            res.status(500).json({ message: 'Erro ao atualizar departamento' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao atualizar departamento' });
+    }
+});
+
+// Rota para deletar um departamento
+app.delete('/api/departamentos/:id', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const id = req.params.id;
+        const success = await departamentos.deleteDepartamento(id);
+        if (success) {
+            res.status(200).json({ message: 'Departamento deletado com sucesso' });
+        } else {
+            res.status(500).json({ message: 'Erro ao deletar departamento' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao deletar departamento' });
     }
 });
 
