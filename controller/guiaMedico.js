@@ -15,11 +15,26 @@ async function getGuiasMedicos() {
         return null;
     }
 }
+async function getGuiasMedicosByUserId(userId) {
+    try {
+        const data = [];
+        const q = query(collection(db, "guiasMedicos"), where("idCliente", "==", userId));
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((doc) => {
+            data.push(doc.data());
+        });
+        console.log(data);
+        return data;
+    } catch (error) {
+        console.error('Erro ao fazer a requisição:', error.message);
+        return null;
+    }
+}
 
 async function getGuiaMedico(id) {
     try {
         const docRef = doc(db, "guiasMedicos", id);
-        const docSnap = await getDoc(docRef);
+        const docSnap = await getDocs(docRef);
         if (docSnap.exists()) {
             return docSnap.data();
         }
@@ -69,8 +84,10 @@ async function deleteGuiaMedico(id) {
 
 module.exports = { 
     getGuiasMedicos, 
+    getGuiasMedicosByUserId,
     getGuiaMedico, 
     addGuiaMedico, 
     updateGuiaMedico, 
     deleteGuiaMedico 
+
 };
