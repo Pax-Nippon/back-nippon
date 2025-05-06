@@ -19,6 +19,7 @@ const cobrancaWhatsapp = require('./controller/cobrancaWhatsApp');
 const pedidosFunerais = require('./controller/pedidosFuneral');
 const departamentos = require('./controller/departamentos');
 const schedule = require('node-schedule');
+const path = require('path');
 const { verificarToken, havePermissionAdministrador, havePermissionEditor, havePermissionVendedor } = require('./controller/authentication');
 const cors = require("cors");
 const corsOptions = {
@@ -31,11 +32,14 @@ app.use(express.json());
 app.use(express.text())
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, 'build')));
 
 //Login
 app.post('/login', async (req, res) => {
     try {
         const user = req.body;
+        console.log(user)
         const data = await authentication.getUser(user);
         if (data) {
             res.json(data);
@@ -645,6 +649,14 @@ app.delete('/api/departamentos/:id', verificarToken, havePermissionAdministrador
 
 //------------------Door----------------------//
 const port = process.env.PORT || 6001;
-const server = app.listen(port, () => {
+
+  
+const server = app.listen(port, '0.0.0.0', () => {
     console.log('Order API is running at ' + port);
+});
+
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
