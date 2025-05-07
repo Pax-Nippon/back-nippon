@@ -1,7 +1,7 @@
 const axios = require('axios');
 const { db } = require('../firebase');
 const { doc, getDocs, getDoc, collection, setDoc, query, where, updateDoc, Timestamp, orderBy } = require("firebase/firestore")
-const { uniKey, formatarTimestamp, obterDataFormatadaHoje} = require('../functions');
+const { uniKey, formatarTimestamp, obterDataFormatadaHoje } = require('../functions');
 const { getContratos } = require('./contratos');
 const { getConfigComponents } = require('./configuracoes');
 const { getCliente } = require('./clientes');
@@ -542,12 +542,115 @@ async function getClientesByQuery(querys) {
             }
 
         }
+
         return data;
 
     } catch (error) {
         console.error('Erro ao fazer a requisição:', error.message);
         return null;
     }
+}
+
+async function getMensalidadesBySetorCobranca(dataReceived) {
+    const data = [];
+    let querySnap;
+
+    if (dataReceived.setor_cobranca) {
+        // Verifica se é uma string com múltiplos valores
+        if (typeof dataReceived.setor_cobranca === 'string' && dataReceived.setor_cobranca.includes(',')) {
+            const setores = dataReceived.setor_cobranca.split(',').map(s => Number(s.trim()));
+            const allResults = new Set(); // Para evitar duplicatas
+
+            // Faz uma query para cada setor
+            for (const setor of setores) {
+                const conditions = [where('setor_cobranca', '==', setor)];
+                
+                // Adiciona condições de data se existirem
+                if (dataReceived.data_inicio && dataReceived.data_fim) {
+                    const dataInicio = dataReceived.data_inicio.split('-');
+                    const dataFim = dataReceived.data_fim.split('-');
+                    const diaInicio = Number(dataInicio[2]);
+                    const diaFim = Number(dataFim[2]);
+                    
+                    conditions.push(where('dia_vencimento', '>=', diaInicio));
+                    conditions.push(where('dia_vencimento', '<=', diaFim));
+                }
+
+                querySnap = await getDocs(
+                    query(
+                        collection(db, "contratos"),
+                        ...conditions
+                    )
+                );
+
+                // Adiciona os resultados ao Set
+                querySnap.docs.forEach(doc => {
+                    allResults.add(doc.id);
+                });
+            }
+
+            // Converte o Set de IDs em documentos
+            const clientesData = [];
+            for (const docId of allResults) {
+                try {
+                    const contratoRef = doc(db, "contratos", docId);
+                    const contratoSnap = await getDoc(contratoRef);
+                    if (contratoSnap.exists()) {
+                        const clienteRef = doc(db, "clientes", contratoSnap.data().idCliente);
+                        const clienteSnap = await getDoc(clienteRef);
+                        if (clienteSnap.exists()) {
+                            clientesData.push({
+                                ...clienteSnap.data(),
+                                contrato: contratoSnap.data()
+                            });
+                        }
+                    }
+                } catch (err) {
+                    console.error('Erro ao buscar cliente:', err);
+                }
+            }
+            data.push(...clientesData);
+        } else {
+            // Caso seja um único valor
+            const setorCobranca = Number(dataReceived.setor_cobranca);
+            const conditions = [where('setor_cobranca', '==', setorCobranca)];
+
+            if (dataReceived.data_inicio && dataReceived.data_fim) {
+                const dataInicio = dataReceived.data_inicio.split('-');
+                const dataFim = dataReceived.data_fim.split('-');
+                const diaInicio = Number(dataInicio[2]);
+                const diaFim = Number(dataFim[2]);
+                
+                conditions.push(where('dia_vencimento', '>=', diaInicio));
+                conditions.push(where('dia_vencimento', '<=', diaFim));
+            }
+
+            querySnap = await getDocs(
+                query(
+                    collection(db, "contratos"),
+                    ...conditions
+                )
+            );
+
+            const clientesData = [];
+            for (const contrato of querySnap.docs) {
+                try {
+                    const clienteRef = doc(db, "clientes", contrato.data().idCliente);
+                    const clienteSnap = await getDoc(clienteRef);
+                    if (clienteSnap.exists()) {
+                        clientesData.push({
+                            ...clienteSnap.data(),
+                            contrato: contrato.data()
+                        });
+                    }
+                } catch (err) {
+                    console.error('Erro ao buscar cliente:', err);
+                }
+            }
+            data.push(...clientesData);
+        }
+    }
+    return data;
 }
 
 // async function gerarMensalidade(idCliente) {
@@ -586,4 +689,4 @@ async function getClientesByQuery(querys) {
 
 
 
-module.exports = { getMensalidadeUnica, getClientesByQuery, addBoleto, getMensalidadeCarne, getMensalidadesVencidas10Dias, getMensalidadesVencidas3Dias, getMensalidadesVencemHoje, getTodasMensalidades, getMensalidadesAtrasadasQnt, pagarMensalidade, gerarMensalidade, gerarMensalidadeUnica, updateValue, addBoletoCarne };
+module.exports = { getMensalidadeUnica, getClientesByQuery, getMensalidadesBySetorCobranca, addBoleto, getMensalidadeCarne, getMensalidadesVencidas10Dias, getMensalidadesVencidas3Dias, getMensalidadesVencemHoje, getTodasMensalidades, getMensalidadesAtrasadasQnt, pagarMensalidade, gerarMensalidade, gerarMensalidadeUnica, updateValue, addBoletoCarne };

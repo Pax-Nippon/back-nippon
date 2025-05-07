@@ -37,14 +37,7 @@ async function AddUser(dataReceived) {
 
 async function UpdateUser(dataReceived) {
     try {
-        const data = {
-            name: dataReceived.name,
-            login: dataReceived.login,
-            password:  dataReceived.password,
-            type: dataReceived.type,
-            id: dataReceived.id
-        };
-        await setDoc(doc(db, "users", dataReceived.id), data);
+        await setDoc(doc(db, "users", dataReceived.id), dataReceived);
         return true;
     } catch (error) {
         console.error('Erro ao fazer a requisição:', error.message);

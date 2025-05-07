@@ -8,6 +8,7 @@ const servicos = require('./controller/servicos');
 const users = require('./controller/users');
 const contratos = require('./controller/contratos');
 const guiaMedico = require('./controller/guiaMedico');
+const logs = require('./controller/logs');
 const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -96,6 +97,7 @@ app.post('/users/adduser', verificarToken, havePermissionAdministrador, async (r
 app.put('/users/updateuser', verificarToken, havePermissionAdministrador, async (req, res) => {
     try {
         const dataReceived = req.body;
+        console.log(dataReceived)
         const data = await users.UpdateUser(dataReceived);
         res.json(data);
     } catch (error) {
@@ -229,6 +231,17 @@ app.get('/clientes/getClientesByQuery', verificarToken, async (req, res) => {
         res.status(400).json({ message: 'error' });
     }
 })
+app.get('/clientes/getMensalidadesBySetorCobranca', verificarToken, async (req, res) => {
+    try {
+        const dataReceived = req.query;
+        const data = await mensalidades.getMensalidadesBySetorCobranca(dataReceived);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+
+
 app.post('/clientes/addcliente', verificarToken, async (req, res) => {
     try {
         const dataReceived = req.body;
@@ -647,6 +660,48 @@ app.delete('/api/departamentos/:id', verificarToken, havePermissionAdministrador
     }
 });
 
+//-----------------------------------------------------------Logs-----------------------------------------------------------------------//
+app.post('/logs', verificarToken, async (req, res) => {
+    try {
+        const data = req.body;
+        const result = await logs.addLog(data);
+        if (result) {
+            res.status(201).json({ message: 'Log registrado com sucesso' });
+        } else {
+            res.status(500).json({ message: 'Erro ao registrar log' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao registrar log' });
+    }
+});
+
+app.get('/logs', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const limit = req.query.limit ? parseInt(req.query.limit) : 100;
+        const data = await logs.getLogs(limit);
+        if (data) {
+            res.status(200).json(data);
+        } else {
+            res.status(500).json({ message: 'Erro ao buscar logs' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao buscar logs' });
+    }
+});
+
+app.get('/logs/user/:id', verificarToken, async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const data = await logs.getLogsByUser(userId);  
+        if (data) {
+            res.status(200).json(data);
+        } else {
+            res.status(500).json({ message: 'Erro ao buscar logs' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao buscar logs' });
+    }
+});
 //------------------Door----------------------//
 const port = process.env.PORT || 6001;
 
