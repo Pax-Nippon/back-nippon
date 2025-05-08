@@ -436,7 +436,7 @@ app.post('/gerarLink/pix', verificarToken, async (req, res) => {
         const data = await pix.gerarPiximediato(req.body);
         res.json(data);
     } catch (error) {
-        res.status(400).json({ message: error});
+        res.status(400).json({ message: error });
     }
 })
 
@@ -444,7 +444,7 @@ app.post('/gerarLink/pix', verificarToken, async (req, res) => {
 // const job = schedule.scheduleJob('16 12 * * *', async function() {
 //     //Pega Cobranca do Dia
 //     // const cobrancaDoDia = await cobrancaWhatsapp.enviaCobrancaWhatsapp(); 
-    
+
 //     const data = await cobrancaWhatsapp.enviaCobrancaWhatsapp(req.body);
 //     // cobranca.cobrancaEmail(data);
 //   });
@@ -471,7 +471,7 @@ app.post('/whatsapp/logar', async (req, res) => {
 })
 
 //-----------------------------------------------------------Pedido Funeral-----------------------------------------------------------------------//
-app.get('/api/pedidosFunerais/:idCliente',verificarToken, async (req, res) => {
+app.get('/api/pedidosFunerais/:idCliente', verificarToken, async (req, res) => {
     const pedidos = await pedidosFunerais.getPedidosFunerais(req.params.idCliente);
     if (pedidos) {
         res.status(200).json(pedidos);
@@ -480,7 +480,7 @@ app.get('/api/pedidosFunerais/:idCliente',verificarToken, async (req, res) => {
     }
 });
 
-app.post('/api/pedidosFunerais',verificarToken, async (req, res) => {
+app.post('/api/pedidosFunerais', verificarToken, async (req, res) => {
     const data = req.body;
     const id = await pedidosFunerais.addPedidosFunerais(data);
     if (id) {
@@ -490,7 +490,7 @@ app.post('/api/pedidosFunerais',verificarToken, async (req, res) => {
     }
 });
 
-app.put('/api/pedidosFunerais/:id',verificarToken, havePermissionAdministrador, async (req, res) => {
+app.put('/api/pedidosFunerais/:id', verificarToken, havePermissionAdministrador, async (req, res) => {
     const success = await pedidosFunerais.updatePedidosFunerais(req.params.id, req.body);
     if (success) {
         res.status(200).json({ message: 'Pedido atualizado com sucesso' });
@@ -499,7 +499,7 @@ app.put('/api/pedidosFunerais/:id',verificarToken, havePermissionAdministrador, 
     }
 });
 
-app.delete('/api/pedidosFunerais/:id',verificarToken, havePermissionAdministrador, async (req, res) => {
+app.delete('/api/pedidosFunerais/:id', verificarToken, havePermissionAdministrador, async (req, res) => {
     const success = await pedidosFunerais.deletePedidosFunerais(req.params.id);
     if (success) {
         res.status(200).json({ message: 'Pedido deletado com sucesso' });
@@ -508,7 +508,7 @@ app.delete('/api/pedidosFunerais/:id',verificarToken, havePermissionAdministrado
     }
 });
 
-app.get('/api/relatorioPedido/:id',verificarToken, async (req, res) => {
+app.get('/api/relatorioPedido/:id', verificarToken, async (req, res) => {
     const relatorio = await pedidosFunerais.generateRelatorioPedido(req.params.id);
     if (relatorio) {
         res.status(200).json(relatorio);
@@ -555,7 +555,7 @@ app.get('/api/guiasMedicos/user/:id', verificarToken, async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Erro ao buscar guias médicos' });
     }
-}); 
+});
 
 
 app.post('/api/guiasMedicos', verificarToken, async (req, res) => {
@@ -677,8 +677,9 @@ app.post('/logs', verificarToken, async (req, res) => {
 
 app.get('/logs', verificarToken, havePermissionAdministrador, async (req, res) => {
     try {
-        const limit = req.query.limit ? parseInt(req.query.limit) : 100;
-        const data = await logs.getLogs(limit);
+
+        const dataReceived = req.query;
+        const data = await logs.getLogs(dataReceived);
         if (data) {
             res.status(200).json(data);
         } else {
@@ -692,7 +693,7 @@ app.get('/logs', verificarToken, havePermissionAdministrador, async (req, res) =
 app.get('/logs/user/:id', verificarToken, async (req, res) => {
     try {
         const userId = req.params.id;
-        const data = await logs.getLogsByUser(userId);  
+        const data = await logs.getLogsByUser(userId);
         if (data) {
             res.status(200).json(data);
         } else {
@@ -705,7 +706,7 @@ app.get('/logs/user/:id', verificarToken, async (req, res) => {
 //------------------Door----------------------//
 const port = process.env.PORT || 6001;
 
-  
+
 const server = app.listen(port, '0.0.0.0', () => {
     console.log('Order API is running at ' + port);
 });
