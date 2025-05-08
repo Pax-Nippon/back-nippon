@@ -551,9 +551,11 @@ async function getClientesByQuery(querys) {
     }
 }
 
+
 async function getMensalidadesBySetorCobranca(dataReceived) {
     const data = [];
     let querySnap;
+    const processedClients = new Set(); // To track processed client IDs
 
     if (dataReceived.setor_cobranca) {
         // Verifica se é uma string com múltiplos valores
@@ -564,14 +566,14 @@ async function getMensalidadesBySetorCobranca(dataReceived) {
             // Faz uma query para cada setor
             for (const setor of setores) {
                 const conditions = [where('setor_cobranca', '==', setor)];
-                
+
                 // Adiciona condições de data se existirem
                 if (dataReceived.data_inicio && dataReceived.data_fim) {
                     const dataInicio = dataReceived.data_inicio.split('-');
                     const dataFim = dataReceived.data_fim.split('-');
                     const diaInicio = Number(dataInicio[2]);
                     const diaFim = Number(dataFim[2]);
-                    
+
                     conditions.push(where('dia_vencimento', '>=', diaInicio));
                     conditions.push(where('dia_vencimento', '<=', diaFim));
                 }
@@ -596,13 +598,18 @@ async function getMensalidadesBySetorCobranca(dataReceived) {
                     const contratoRef = doc(db, "contratos", docId);
                     const contratoSnap = await getDoc(contratoRef);
                     if (contratoSnap.exists()) {
-                        const clienteRef = doc(db, "clientes", contratoSnap.data().idCliente);
-                        const clienteSnap = await getDoc(clienteRef);
-                        if (clienteSnap.exists()) {
-                            clientesData.push({
-                                ...clienteSnap.data(),
-                                contrato: contratoSnap.data()
-                            });
+                        const clienteId = contratoSnap.data().idCliente;
+                        // Only process if we haven't seen this client before
+                        if (!processedClients.has(clienteId)) {
+                            processedClients.add(clienteId);
+                            const clienteRef = doc(db, "clientes", clienteId);
+                            const clienteSnap = await getDoc(clienteRef);
+                            if (clienteSnap.exists()) {
+                                clientesData.push({
+                                    ...clienteSnap.data(),
+                                    contrato: contratoSnap.data()
+                                });
+                            }
                         }
                     }
                 } catch (err) {
@@ -620,7 +627,7 @@ async function getMensalidadesBySetorCobranca(dataReceived) {
                 const dataFim = dataReceived.data_fim.split('-');
                 const diaInicio = Number(dataInicio[2]);
                 const diaFim = Number(dataFim[2]);
-                
+
                 conditions.push(where('dia_vencimento', '>=', diaInicio));
                 conditions.push(where('dia_vencimento', '<=', diaFim));
             }
@@ -635,13 +642,18 @@ async function getMensalidadesBySetorCobranca(dataReceived) {
             const clientesData = [];
             for (const contrato of querySnap.docs) {
                 try {
-                    const clienteRef = doc(db, "clientes", contrato.data().idCliente);
-                    const clienteSnap = await getDoc(clienteRef);
-                    if (clienteSnap.exists()) {
-                        clientesData.push({
-                            ...clienteSnap.data(),
-                            contrato: contrato.data()
-                        });
+                    const clienteId = contrato.data().idCliente;
+                    // Only process if we haven't seen this client before
+                    if (!processedClients.has(clienteId)) {
+                        processedClients.add(clienteId);
+                        const clienteRef = doc(db, "clientes", clienteId);
+                        const clienteSnap = await getDoc(clienteRef);
+                        if (clienteSnap.exists()) {
+                            clientesData.push({
+                                ...clienteSnap.data(),
+                                contrato: contrato.data()
+                            });
+                        }
                     }
                 } catch (err) {
                     console.error('Erro ao buscar cliente:', err);
@@ -653,40 +665,104 @@ async function getMensalidadesBySetorCobranca(dataReceived) {
     return data;
 }
 
-// async function gerarMensalidade(idCliente) {
-//     try {
-//         const contratoCliente = await getContratos(idCliente);
-//         if (contratoCliente.length >= 1) {
-//             contratoCliente.forEach(async contrato => {
-//                 for (let aux = new Date().getMonth() + 1; aux <= 12; aux++) {
-//                     let valorTotal;
-//                     if (contrato.tipoValor === 1) {
-//                         valorTotal = contrato.salarioMinimo * (contrato.valorPorcentagemPlano / 100);
-//                     } else {
-//                         valorTotal = contrato.valorFixoPlano;
-//                     }
-//                     const data = {
-//                         idCliente: idCliente,
-//                         idContrato: contrato.id,
-//                         abreviacao: contrato.abreviacao,
-//                         id: uniKey(30),
-//                         valor: valorTotal,
-//                         paga: false,
-//                         data: new Date().toLocaleString('pt-BR'),
-//                         dataVenc: new Date(new Date().getFullYear(), aux - 1, contrato.dia_vencimento),
-//                     };
-//                     await setDoc(doc(db, "mensalidades", data.id), data);
-//                 }
+async function gerarMensalidadesTodosContratos(dataReceived) {
+    try {
+        console.log(dataReceived);
+        const results = {
+            success: [],
+            errors: []
+        };
 
-//             });
-//         }
-//         return true;
-//     } catch (error) {
-//         console.error('Erro ao fazer a requisição:', error.message);
-//         return null;
-//     }
-// }
+        // Parse the date strings
+        const [mesInicio, anoInicio] = dataReceived.mesInicio.split('/').map(Number);
+        const [mesFim, anoFim] = dataReceived.mesFim.split('/').map(Number);
+
+        // Get all contracts for tipo_cliente 0
+        const querySnap = await getDocs(
+            query(
+                collection(db, "contratos"),
+                where('tipo_cliente', '==', 0)
+            )
+        );
+        const configData = await getConfigComponents();
 
 
+        for (const doc of querySnap.docs) {
+            try {
+                const contrato = await doc.data();
 
-module.exports = { getMensalidadeUnica, getClientesByQuery, getMensalidadesBySetorCobranca, addBoleto, getMensalidadeCarne, getMensalidadesVencidas10Dias, getMensalidadesVencidas3Dias, getMensalidadesVencemHoje, getTodasMensalidades, getMensalidadesAtrasadasQnt, pagarMensalidade, gerarMensalidade, gerarMensalidadeUnica, updateValue, addBoletoCarne };
+                // Generate mensalidades for each month in the range
+                for (let ano = anoInicio; ano <= anoFim; ano++) {
+                    const mesInicioAno = (ano === anoInicio) ? mesInicio : 1;
+                    const mesFimAno = (ano === anoFim) ? mesFim : 12;
+                    for (let mes = mesInicioAno; mes <= mesFimAno; mes++) {
+                        console.log(`Contrato: ${doc.id} - Mês: ${mes} - Ano: ${ano}`);
+
+                        let valorTotal = 0;
+
+                        // Calculate service values
+                        if (contrato.servicos?.length > 0) {
+                            for (const servico of contrato.servicos) {
+                                let valorServico = 0;
+                                if (servico.tipoValor === 1) {
+                                    valorServico = configData.salarioMinimo * (servico.valorPorcentagemServico / 100);
+                                } else {
+                                    valorServico = servico.valorFixoServico;
+                                }
+                                valorTotal += valorServico;
+                            }
+                        }
+                        // Calculate plan value
+                        if (contrato.tipoValor === 1) {
+                            valorTotal += configData.salarioMinimo * (contrato.valorPorcentagemPlano / 100);
+                        } else {
+                            valorTotal += contrato.valorFixoPlano;
+                        }
+
+                        const mensalidade = {
+                            idCliente: contrato.idCliente,
+                            idContrato: contrato.id,
+                            idPlano: contrato.convenio,
+                            abreviacao: contrato.abreviacao,
+                            id: uniKey(30),
+                            valor: valorTotal,
+                            type: contrato.tipoTaxa,
+                            paga: false,
+                            data: new Date(),
+                            dataVenc: new Date(ano, mes - 1, contrato.dia_vencimento),
+                            observacao: dataReceived.observacao || ''
+                        };
+
+                        const mensalidadeRef = await setDoc(doc(db, "mensalidades", mensalidade.id), mensalidade);
+                        console.log('Mensalidade criada:', mensalidade.id);
+                        // results.success.push({
+                        //     contratoId: contrato.id,
+                        //     clienteId: contrato.idCliente,
+                        //     mensalidadeId: mensalidade.id,
+                        //     mes: mes,
+                        //     ano: ano
+                        // });
+                    }
+                }
+            } catch (error) {
+                results.errors.push({
+                    contratoId: doc.id,
+                    error: error.message
+                });
+            }
+        }
+
+        return {
+            success: true,
+            data: results
+        };
+    } catch (error) {
+        console.error('Erro ao gerar mensalidades:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
+module.exports = { getMensalidadeUnica, getClientesByQuery, getMensalidadesBySetorCobranca, addBoleto, getMensalidadeCarne, getMensalidadesVencidas10Dias, getMensalidadesVencidas3Dias, getMensalidadesVencemHoje, getTodasMensalidades, getMensalidadesAtrasadasQnt, pagarMensalidade, gerarMensalidade, gerarMensalidadeUnica, updateValue, addBoletoCarne, gerarMensalidadesTodosContratos };

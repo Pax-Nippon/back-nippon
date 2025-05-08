@@ -174,6 +174,16 @@ app.post('/mensalidades/gerarMensalidadeUnica', verificarToken, async (req, res)
     }
 })
 
+app.post('/mensalidades/gerarMensalidadesTodosContratos', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const dataReceived = req.body;
+        const data = await mensalidades.gerarMensalidadesTodosContratos(dataReceived);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+
 //Planos
 app.get('/planos/getAllPlanos', verificarToken, havePermissionAdministrador, async (req, res) => {
     try {
