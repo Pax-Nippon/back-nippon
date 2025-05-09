@@ -8,6 +8,7 @@ const servicos = require('./controller/servicos');
 const users = require('./controller/users');
 const contratos = require('./controller/contratos');
 const guiaMedico = require('./controller/guiaMedico');
+const logs = require('./controller/logs');
 const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -22,6 +23,7 @@ const setores = require('./controller/setor');
 const cemiterios = require('./controller/cemiterios');
 const medicosClinicas = require('./controller/medicosClinicas');
 const schedule = require('node-schedule');
+const path = require('path');
 const { verificarToken, havePermissionAdministrador, havePermissionEditor, havePermissionVendedor } = require('./controller/authentication');
 const cors = require("cors");
 const corsOptions = {
@@ -34,11 +36,14 @@ app.use(express.json());
 app.use(express.text())
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, 'build')));
 
 //Login
 app.post('/login', async (req, res) => {
     try {
         const user = req.body;
+        console.log(user)
         const data = await authentication.getUser(user);
         if (data) {
             res.json(data);
@@ -95,6 +100,7 @@ app.post('/users/adduser', verificarToken, havePermissionAdministrador, async (r
 app.put('/users/updateuser', verificarToken, havePermissionAdministrador, async (req, res) => {
     try {
         const dataReceived = req.body;
+        console.log(dataReceived)
         const data = await users.UpdateUser(dataReceived);
         res.json(data);
     } catch (error) {
@@ -171,6 +177,16 @@ app.post('/mensalidades/gerarMensalidadeUnica', verificarToken, async (req, res)
     }
 })
 
+app.post('/mensalidades/gerarMensalidadesTodosContratos', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const dataReceived = req.body;
+        const data = await mensalidades.gerarMensalidadesTodosContratos(dataReceived);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+
 //Planos
 app.get('/planos/getAllPlanos', verificarToken, havePermissionAdministrador, async (req, res) => {
     try {
@@ -228,6 +244,17 @@ app.get('/clientes/getClientesByQuery', verificarToken, async (req, res) => {
         res.status(400).json({ message: 'error' });
     }
 })
+app.get('/clientes/getMensalidadesBySetorCobranca', verificarToken, async (req, res) => {
+    try {
+        const dataReceived = req.query;
+        const data = await mensalidades.getMensalidadesBySetorCobranca(dataReceived);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+
+
 app.post('/clientes/addcliente', verificarToken, async (req, res) => {
     try {
         const dataReceived = req.body;
@@ -422,7 +449,7 @@ app.post('/gerarLink/pix', verificarToken, async (req, res) => {
         const data = await pix.gerarPiximediato(req.body);
         res.json(data);
     } catch (error) {
-        res.status(400).json({ message: error});
+        res.status(400).json({ message: error });
     }
 })
 
@@ -430,7 +457,7 @@ app.post('/gerarLink/pix', verificarToken, async (req, res) => {
 // const job = schedule.scheduleJob('16 12 * * *', async function() {
 //     //Pega Cobranca do Dia
 //     // const cobrancaDoDia = await cobrancaWhatsapp.enviaCobrancaWhatsapp(); 
-    
+
 //     const data = await cobrancaWhatsapp.enviaCobrancaWhatsapp(req.body);
 //     // cobranca.cobrancaEmail(data);
 //   });
@@ -457,7 +484,7 @@ app.post('/whatsapp/logar', async (req, res) => {
 })
 
 //-----------------------------------------------------------Pedido Funeral-----------------------------------------------------------------------//
-app.get('/api/pedidosFunerais/:idCliente',verificarToken, async (req, res) => {
+app.get('/api/pedidosFunerais/:idCliente', verificarToken, async (req, res) => {
     const pedidos = await pedidosFunerais.getPedidosFunerais(req.params.idCliente);
     if (pedidos) {
         res.status(200).json(pedidos);
@@ -466,7 +493,7 @@ app.get('/api/pedidosFunerais/:idCliente',verificarToken, async (req, res) => {
     }
 });
 
-app.post('/api/pedidosFunerais',verificarToken, async (req, res) => {
+app.post('/api/pedidosFunerais', verificarToken, async (req, res) => {
     const data = req.body;
     const id = await pedidosFunerais.addPedidosFunerais(data);
     if (id) {
@@ -476,7 +503,7 @@ app.post('/api/pedidosFunerais',verificarToken, async (req, res) => {
     }
 });
 
-app.put('/api/pedidosFunerais/:id',verificarToken, havePermissionAdministrador, async (req, res) => {
+app.put('/api/pedidosFunerais/:id', verificarToken, havePermissionAdministrador, async (req, res) => {
     const success = await pedidosFunerais.updatePedidosFunerais(req.params.id, req.body);
     if (success) {
         res.status(200).json({ message: 'Pedido atualizado com sucesso' });
@@ -485,7 +512,7 @@ app.put('/api/pedidosFunerais/:id',verificarToken, havePermissionAdministrador, 
     }
 });
 
-app.delete('/api/pedidosFunerais/:id',verificarToken, havePermissionAdministrador, async (req, res) => {
+app.delete('/api/pedidosFunerais/:id', verificarToken, havePermissionAdministrador, async (req, res) => {
     const success = await pedidosFunerais.deletePedidosFunerais(req.params.id);
     if (success) {
         res.status(200).json({ message: 'Pedido deletado com sucesso' });
@@ -494,7 +521,7 @@ app.delete('/api/pedidosFunerais/:id',verificarToken, havePermissionAdministrado
     }
 });
 
-app.get('/api/relatorioPedido/:id',verificarToken, async (req, res) => {
+app.get('/api/relatorioPedido/:id', verificarToken, async (req, res) => {
     const relatorio = await pedidosFunerais.generateRelatorioPedido(req.params.id);
     if (relatorio) {
         res.status(200).json(relatorio);
@@ -541,7 +568,7 @@ app.get('/api/guiasMedicos/user/:id', verificarToken, async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Erro ao buscar guias médicos' });
     }
-}); 
+});
 
 
 app.post('/api/guiasMedicos', verificarToken, async (req, res) => {
@@ -657,6 +684,49 @@ app.delete('/api/departamentos/:id', verificarToken, havePermissionAdministrador
     }
 });
 
+//-----------------------------------------------------------Logs-----------------------------------------------------------------------//
+app.post('/logs', verificarToken, async (req, res) => {
+    try {
+        const data = req.body;
+        const result = await logs.addLog(data);
+        if (result) {
+            res.status(201).json({ message: 'Log registrado com sucesso' });
+        } else {
+            res.status(500).json({ message: 'Erro ao registrar log' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao registrar log' });
+    }
+});
+
+app.get('/logs', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+
+        const dataReceived = req.query;
+        const data = await logs.getLogs(dataReceived);
+        if (data) {
+            res.status(200).json(data);
+        } else {
+            res.status(500).json({ message: 'Erro ao buscar logs' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao buscar logs' });
+    }
+});
+
+app.get('/logs/user/:id', verificarToken, async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const data = await logs.getLogsByUser(userId);
+        if (data) {
+            res.status(200).json(data);
+        } else {
+            res.status(500).json({ message: 'Erro ao buscar logs' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao buscar logs' });
+    }
+});
 //------------------Setores----------------------//
 
 // Rota para listar todos os setores
@@ -897,6 +967,14 @@ app.delete('/api/medicos_clinicas/:id', verificarToken, havePermissionAdministra
 
 //------------------Door----------------------//
 const port = process.env.PORT || 6001;
-const server = app.listen(port, () => {
+
+
+const server = app.listen(port, '0.0.0.0', () => {
     console.log('Order API is running at ' + port);
+});
+
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });

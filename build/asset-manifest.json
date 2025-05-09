@@ -1,0 +1,18 @@
+{
+  "files": {
+    "main.css": "/static/css/main.329401f3.css",
+    "main.js": "/static/js/main.47e870ee.js",
+    "static/media/Courgette-Regular.ttf": "/static/media/Courgette-Regular.f99d9948a486f6270149.ttf",
+    "static/media/fundoPax.jpg": "/static/media/fundoPax.d6bc05fa1704b0bcd365.jpg",
+    "static/media/Zeyada-Regular.ttf": "/static/media/Zeyada-Regular.fb9bab9d2c0d16e69cdd.ttf",
+    "static/media/logo.jpg": "/static/media/logo.8822663b8e898b5cda94.jpg",
+    "static/media/logo-grupo-nippon.png": "/static/media/logo-grupo-nippon.10e3cb423fe9fb12d93d.png",
+    "index.html": "/index.html",
+    "main.329401f3.css.map": "/static/css/main.329401f3.css.map",
+    "main.47e870ee.js.map": "/static/js/main.47e870ee.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.329401f3.css",
+    "static/js/main.47e870ee.js"
+  ]
+}
