@@ -306,7 +306,6 @@ async function pagarMensalidade(idMensalidade, data) {
 
 
 async function gerarMensalidade(data) {
-    console.log(data)
     // console.log(data.plano.servicos)
     try {
         const auxQntInicial = data.mesesGerados[0].split('-');
@@ -327,14 +326,11 @@ async function gerarMensalidade(data) {
                 } else {
                     valorServico = servico.valorFixoServico;
                 }
-                console.log(1);
-                console.log(valorServico);
                 valorPlano += valorServico;
             }
         }
 
         if (data.plano.tipoValor === 1) {
-            console.log(2)
             const configData = await getConfigComponents();
             valorPlano += configData.salarioMinimo * (data.plano.valorPorcentagemPlano / 100);
         } else {
@@ -346,7 +342,6 @@ async function gerarMensalidade(data) {
         for (let ano = anoInicial; ano <= anoFinal; ano++) {
             const mesInicio = (ano === anoInicial) ? mesInicial : 1;
             const mesFim = (ano === anoFinal) ? mesFinal : 12;
-
             for (let mes = mesInicio; mes <= mesFim; mes++) {
                 const mensalidade = {
                     idCliente: data.plano.idCliente,
@@ -360,6 +355,7 @@ async function gerarMensalidade(data) {
                     data: new Date(),
                     dataVenc: new Date(ano, mes - 1, data.plano.dia_vencimento),
                 };
+                console.log(mensalidade)
                 await setDoc(doc(db, "mensalidades", mensalidade.id), mensalidade);
             }
         }
@@ -687,16 +683,15 @@ async function gerarMensalidadesTodosContratos(dataReceived) {
         const configData = await getConfigComponents();
 
 
-        for (const doc of querySnap.docs) {
+        for (const docData of querySnap.docs) {
             try {
-                const contrato = await doc.data();
+                const contrato = await docData.data();
 
                 // Generate mensalidades for each month in the range
                 for (let ano = anoInicio; ano <= anoFim; ano++) {
                     const mesInicioAno = (ano === anoInicio) ? mesInicio : 1;
                     const mesFimAno = (ano === anoFim) ? mesFim : 12;
                     for (let mes = mesInicioAno; mes <= mesFimAno; mes++) {
-                        console.log(`Contrato: ${doc.id} - Mês: ${mes} - Ano: ${ano}`);
 
                         let valorTotal = 0;
 
@@ -719,22 +714,29 @@ async function gerarMensalidadesTodosContratos(dataReceived) {
                             valorTotal += contrato.valorFixoPlano;
                         }
 
-                        const mensalidade = {
+                        const mensalidadeData = {
                             idCliente: contrato.idCliente,
                             idContrato: contrato.id,
                             idPlano: contrato.convenio,
                             abreviacao: contrato.abreviacao,
                             id: uniKey(30),
                             valor: valorTotal,
-                            type: contrato.tipoTaxa,
+                            type: contrato.tipoValor,
                             paga: false,
                             data: new Date(),
                             dataVenc: new Date(ano, mes - 1, contrato.dia_vencimento),
                             observacao: dataReceived.observacao || ''
                         };
+                        console.log(mensalidadeData)
 
-                        const mensalidadeRef = await setDoc(doc(db, "mensalidades", mensalidade.id), mensalidade);
-                        console.log('Mensalidade criada:', mensalidade.id);
+                        try {
+                            await setDoc(doc(db, "mensalidades", mensalidadeData.id), mensalidadeData);
+                            console.log('Mensalidade criada com ID:', mensalidadeData.id);
+                          } catch (err) {
+                            console.error('Erro ao criar mensalidade:', err.message);
+                          }
+                          
+                     
                         // results.success.push({
                         //     contratoId: contrato.id,
                         //     clienteId: contrato.idCliente,
