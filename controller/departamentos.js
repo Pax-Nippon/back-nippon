@@ -19,8 +19,9 @@ async function getDepartamentos() {
   try {
     const data = [];
     const querySnap = await getDocs(collection(db, "departamentos"));
+    console.log("Documentos encontrados:", querySnap.size); // Log do número de documentos encontrados
     querySnap.forEach((doc) => {
-      data.push({ id: doc.id, ...doc.data() }); // Inclui o id e os dados do documento
+      data.push({ id: doc.id, ...doc.data() }); // Inclui todos os campos
     });
     return data;
   } catch (error) {
@@ -30,15 +31,19 @@ async function getDepartamentos() {
 }
 
 // Função para criar um novo departamento
-async function addDepartamento(nome) {
+async function addDepartamento({ codigo, descricao, abreviacao }) {
   try {
-    const id = uniKey(4); // Gera um ID único
+    const id = uniKey(20); // Gera um ID único de 20 caracteres
+
     await setDoc(doc(db, "departamentos", id), {
       id: id,
-      nome: nome,
+      codigo: codigo,
+      descricao: descricao,
+      abreviacao: abreviacao,
     });
-    console.log("Departamento criado com sucesso:", { id, nome });
-    return id;
+
+    console.log("Departamento criado com sucesso:", { id, codigo, descricao, abreviacao });
+    return { id };
   } catch (error) {
     console.error("Erro ao criar departamento:", error.message);
     return null;
@@ -46,11 +51,17 @@ async function addDepartamento(nome) {
 }
 
 // Função para atualizar um departamento existente
-async function updateDepartamento(id, nome) {
+async function updateDepartamento(id, { codigo, descricao, abreviacao }) {
   try {
     const docRef = doc(db, "departamentos", id);
-    await updateDoc(docRef, { nome: nome });
-    console.log("Departamento atualizado com sucesso:", { id, nome });
+
+    await updateDoc(docRef, {
+      codigo: codigo,
+      descricao: descricao,
+      abreviacao: abreviacao,
+    });
+
+    console.log("Departamento atualizado com sucesso:", { id, codigo, descricao, abreviacao });
     return true;
   } catch (error) {
     console.error("Erro ao atualizar departamento:", error.message);

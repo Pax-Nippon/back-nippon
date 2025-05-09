@@ -19,6 +19,7 @@ const pix = require('./controller/Efi/pix');
 const cobrancaWhatsapp = require('./controller/cobrancaWhatsApp');
 const pedidosFunerais = require('./controller/pedidosFuneral');
 const departamentos = require('./controller/departamentos');
+const setores = require('./controller/setor');
 const schedule = require('node-schedule');
 const path = require('path');
 const { verificarToken, havePermissionAdministrador, havePermissionEditor, havePermissionVendedor } = require('./controller/authentication');
@@ -627,14 +628,25 @@ app.get('/api/departamentos', verificarToken, async (req, res) => {
 // Rota para criar um novo departamento
 app.post('/api/departamentos', verificarToken, havePermissionAdministrador, async (req, res) => {
     try {
-        const { nome } = req.body;
-        const id = await departamentos.addDepartamento(nome);
-        if (id) {
-            res.status(201).json({ message: 'Departamento criado com sucesso', id });
+        const { codigo, descricao, abreviacao } = req.body;
+
+        // Validação básica
+        if (!codigo || !descricao || !abreviacao) {
+            return res.status(400).json({ message: 'Os campos codigo, descricao e abreviacao são obrigatórios' });
+        }
+
+        const result = await departamentos.addDepartamento({ codigo, descricao, abreviacao });
+
+        if (result) {
+            res.status(201).json({
+                message: 'Departamento criado com sucesso',
+                id: result.id,
+            });
         } else {
             res.status(500).json({ message: 'Erro ao criar departamento' });
         }
     } catch (error) {
+        console.error("Erro ao criar departamento:", error.message);
         res.status(500).json({ message: 'Erro ao criar departamento' });
     }
 });
@@ -713,6 +725,79 @@ app.get('/logs/user/:id', verificarToken, async (req, res) => {
         res.status(500).json({ message: 'Erro ao buscar logs' });
     }
 });
+//------------------Setores----------------------//
+
+// Rota para listar todos os setores
+app.get('/api/setores', verificarToken, async (req, res) => {
+    try {
+        const data = await setores.getSetores();
+        if (data) {
+            res.status(200).json(data);
+        } else {
+            res.status(404).json({ message: 'Nenhum setor encontrado' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao listar setores' });
+    }
+});
+
+// Rota para criar um novo departamento
+app.post('/api/setores', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const { codigo, descricao, cobrador, comissao } = req.body;
+
+        // Validação básica
+        if (!codigo || !descricao || !cobrador || !comissao) {
+            return res.status(400).json({ message: 'Os campos codigo, descricao, cobrador e comissao são obrigatórios' });
+        }
+
+        const result = await setores.addSetores({codigo, descricao, cobrador, comissao});
+
+        if (result) {
+            res.status(201).json({
+                message: 'Setor criado com sucesso',
+                id: result.id,
+            });
+        } else {
+            res.status(500).json({ message: 'Erro ao criar setor' });
+        }
+    } catch (error) {
+        console.error("Erro ao criar setor:", error.message);
+        res.status(500).json({ message: 'Erro ao criar setor' });
+    }
+});
+
+// Rota para atualizar um departamento existente
+app.put('/api/setores/:id', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const { descricao, cobrador, comissao } = req.body;
+        const id = req.params.id;
+        const success = await setores.updateSetores(id, descricao, cobrador, comissao);
+        if (success) {
+            res.status(200).json({ message: 'Setor atualizado com sucesso' });
+        } else {
+            res.status(500).json({ message: 'Erro ao atualizar setor' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao atualizar setor' });
+    }
+});
+
+// Rota para deletar um departamento
+app.delete('/api/setores/:id', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const id = req.params.id;
+        const success = await setores.deleteSetores(id);
+        if (success) {
+            res.status(200).json({ message: 'Setores deletado com sucesso' });
+        } else {
+            res.status(500).json({ message: 'Erro ao deletar setor' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao deletar setor' });
+    }
+});
+
 //------------------Door----------------------//
 const port = process.env.PORT || 6001;
 
