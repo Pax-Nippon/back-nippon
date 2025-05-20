@@ -20,6 +20,8 @@ const cobrancaWhatsapp = require('./controller/cobrancaWhatsApp');
 const pedidosFunerais = require('./controller/pedidosFuneral');
 const departamentos = require('./controller/departamentos');
 const setores = require('./controller/setor');
+const cemiterios = require('./controller/cemiterios');
+const medicosClinicas = require('./controller/medicosClinicas');
 const schedule = require('node-schedule');
 const path = require('path');
 const { verificarToken, havePermissionAdministrador, havePermissionEditor, havePermissionVendedor } = require('./controller/authentication');
@@ -795,6 +797,171 @@ app.delete('/api/setores/:id', verificarToken, havePermissionAdministrador, asyn
         }
     } catch (error) {
         res.status(500).json({ message: 'Erro ao deletar setor' });
+    }
+});
+
+//------------------Cemitério----------------------//
+
+// Rota para listar todos os cemitérios
+app.get('/api/cemiterios', verificarToken, async (req, res) => {
+    try {
+        const data = await cemiterios.getCemiterios();
+        if (data) {
+            res.status(200).json(data);
+        } else {
+            res.status(404).json({ message: 'Nenhum cemitério encontrado' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao listar cemitérios' });
+    }
+});
+
+// Rota para criar um novo cemitério
+app.post('/api/cemiterios', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const { codigo, nome } = req.body;
+
+        // Validação básica
+        if (!codigo || !nome) {
+            return res.status(400).json({ message: 'Os campos codigo e nome são obrigatórios' });
+        }
+
+        const result = await cemiterios.addCemiterios({ codigo, nome });
+
+        if (result) {
+            res.status(201).json({
+                message: 'Cemitério criado com sucesso',
+                id: result.id,
+            });
+        } else {
+            res.status(500).json({ message: 'Erro ao criar cemitério' });
+        }
+    } catch (error) {
+        console.error("Erro ao criar cemitério:", error.message);
+        res.status(500).json({ message: 'Erro ao criar cemitério' });
+    }
+});
+
+// Rota para atualizar um cemitério existente
+app.put('/api/cemiterios/:id', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const { codigo, nome } = req.body;
+        const id = req.params.id;
+
+        if (!codigo || !nome) {
+            return res.status(400).json({ message: 'Os campos codigo e nome são obrigatórios' });
+        }
+
+        const success = await cemiterios.updateCemiterios(id, { codigo, nome });
+
+        if (success) {
+            res.status(200).json({ message: 'Cemitério atualizado com sucesso' });
+        } else {
+            res.status(500).json({ message: 'Erro ao atualizar cemitério' });
+        }
+    } catch (error) {
+        console.error("Erro ao atualizar cemitério:", error.message);
+        res.status(500).json({ message: 'Erro ao atualizar cemitério' });
+    }
+});
+
+// Rota para deletar um cemitério
+app.delete('/api/cemiterios/:id', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const id = req.params.id;
+        const success = await cemiterios.deleteCemiterios(id);
+
+        if (success) {
+            res.status(200).json({ message: 'Cemitério deletado com sucesso' });
+        } else {
+            res.status(500).json({ message: 'Erro ao deletar cemitério' });
+        }
+    } catch (error) {
+        console.error("Erro ao deletar cemitério:", error.message);
+        res.status(500).json({ message: 'Erro ao deletar cemitério' });
+    }
+});
+
+//------------------Médicos e Clínicas----------------------//
+
+// Rota para listar todos os médicos e clínicas
+app.get('/api/medicos_clinicas', verificarToken, async (req, res) => {
+    try {
+        const data = await medicosClinicas.getMedicosClinicas();
+        if (data) {
+            res.status(200).json(data);
+        } else {
+            res.status(404).json({ message: 'Nenhum médico ou clínica encontrado' });
+        }
+    } catch (error) {
+        console.error("Erro ao listar médicos e clínicas:", error.message);
+        res.status(500).json({ message: 'Erro ao listar médicos e clínicas' });
+    }
+});
+
+// Rota para criar um novo médico ou clínica
+app.post('/api/medicos_clinicas', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const { codigo, descricao } = req.body;
+
+        // Validação básica
+        if (!codigo || !descricao) {
+            return res.status(400).json({ message: 'Os campos codigo e descricao são obrigatórios' });
+        }
+
+        const result = await medicosClinicas.addMedicosClinicas({ codigo, descricao });
+
+        if (result) {
+            res.status(201).json({
+                message: 'Médico ou clínica criado com sucesso',
+                id: result.id,
+            });
+        } else {
+            res.status(500).json({ message: 'Erro ao criar médico ou clínica' });
+        }
+    } catch (error) {
+        console.error("Erro ao criar médico ou clínica:", error.message);
+        res.status(500).json({ message: 'Erro ao criar médico ou clínica' });
+    }
+});
+
+// Rota para atualizar um médico ou clínica existente
+app.put('/api/medicos_clinicas/:id', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const { codigo, descricao } = req.body;
+        const id = req.params.id;
+
+        if (!codigo || !descricao) {
+            return res.status(400).json({ message: 'Os campos codigo e descricao são obrigatórios' });
+        }
+
+        const success = await medicosClinicas.updateMedicosClinicas(id, { codigo, descricao });
+
+        if (success) {
+            res.status(200).json({ message: 'Médico ou clínica atualizado com sucesso' });
+        } else {
+            res.status(500).json({ message: 'Erro ao atualizar médico ou clínica' });
+        }
+    } catch (error) {
+        console.error("Erro ao atualizar médico ou clínica:", error.message);
+        res.status(500).json({ message: 'Erro ao atualizar médico ou clínica' });
+    }
+});
+
+// Rota para deletar um médico ou clínica
+app.delete('/api/medicos_clinicas/:id', verificarToken, havePermissionAdministrador, async (req, res) => {
+    try {
+        const id = req.params.id;
+        const success = await medicosClinicas.deleteMedicosClinicas(id);
+
+        if (success) {
+            res.status(200).json({ message: 'Médico ou clínica deletado com sucesso' });
+        } else {
+            res.status(500).json({ message: 'Erro ao deletar médico ou clínica' });
+        }
+    } catch (error) {
+        console.error("Erro ao deletar médico ou clínica:", error.message);
+        res.status(500).json({ message: 'Erro ao deletar médico ou clínica' });
     }
 });
 
