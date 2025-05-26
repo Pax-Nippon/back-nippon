@@ -46,46 +46,46 @@ async function getClientesForCobranca() {
 async function AddCliente(dataReceived) {
     try {
         const data = {
-            nome_titular: dataReceived.nome_titular.toUpperCase(),
-            contrato: dataReceived.contrato ? dataReceived.contrato : [],
+            nome_titular: dataReceived.nome_titular?.toUpperCase() || '',
+            sexo: dataReceived.sexo || '',
+            estado_civil: dataReceived.estado_civil || '',
+            cpf: dataReceived.cpf || '',
+            rg: dataReceived.rg || '',
+            uf: dataReceived.uf || '',
+            email: dataReceived.email || '',
+            telefone_princ: dataReceived.telefone_princ || '',
+            telefone_alt: dataReceived.telefone_alt || '',
+            data_nasc: dataReceived.data_nasc || '',
+            profissao: dataReceived.profissao || '',
+            religiao: dataReceived.religiao || '',
             endereco: {
-                cep: dataReceived?.cep,
-                estado: dataReceived?.estado,
-                cidade: dataReceived?.cidade,
-                bairro: dataReceived?.bairro,
-                endereco: dataReceived?.endereco,
-                number_end: dataReceived?.number_end,
-            },
-            endereco_cobranca: {
-                cep: dataReceived?.endereco_cobranca?.cep,
-                estado: dataReceived?.endereco_cobranca?.estado,
-                cidade: dataReceived?.endereco_cobranca?.cidade,
-                bairro: dataReceived?.endereco_cobranca?.bairro,
-                endereco: dataReceived?.endereco_cobranca?.endereco,
-                number_end: dataReceived?.endereco_cobranca?.number_end,
+                cep: dataReceived.cep || '',
+                cidade: dataReceived.cidade || '',
+                estado: dataReceived.estado || '',
+                endereco: dataReceived.endereco || '',
+                bairro: dataReceived.bairro || '',
+                number_end: dataReceived.number_end || '',
             },
             pais: {
                 mae: {
-                    nome: dataReceived?.pais?.mae?.nome,
-                    viva: dataReceived?.pais?.mae?.viva,
+                    nome: dataReceived?.pais?.mae?.nome || '',
+                    viva: dataReceived?.pais?.mae?.viva ?? null,
                 },
                 pai: {
-                    nome: dataReceived?.pais?.pai?.nome,
-                    vivo: dataReceived?.pais?.pai?.vivo,
+                    nome: dataReceived?.pais?.pai?.nome || '',
+                    vivo: dataReceived?.pais?.pai?.vivo ?? null,
                 }
             },
-            cpf: dataReceived.cpf,
-            rg: dataReceived.rg,
-            uf: dataReceived.uf,
-            local_trabalho: dataReceived?.local_trabalho,
-            telefone_trabalho: dataReceived?.telefone_trabalho,
-            email: dataReceived.email,
-            telefone_princ: dataReceived.telefone_princ,
-            telefone_alt: dataReceived?.telefone_alt ? dataReceived.telefone_alt : '',
-            data_nasc: dataReceived.data_nasc,
-            profissao: dataReceived?.profissao ? dataReceived.profissao : '',
-            religiao: dataReceived?.religiao ? dataReceived.religiao : '',
-            observacoes: dataReceived?.observacoes ? dataReceived.observacoes : '',
+            local_trabalho: dataReceived.local_trabalho || '',
+            telefone_trabalho: dataReceived.telefone_trabalho || '',
+            endereco_cobranca: {
+                cep: dataReceived?.endereco_cobranca?.cep || '',
+                cidade: dataReceived?.endereco_cobranca?.cidade || '',
+                estado: dataReceived?.endereco_cobranca?.estado || '',
+                bairro: dataReceived?.endereco_cobranca?.bairro || '',
+                endereco: dataReceived?.endereco_cobranca?.endereco || '',
+                number_end: dataReceived?.endereco_cobranca?.number_end || '',
+            },
             id: uniKey(25)
         };
         await setDoc(doc(db, "clientes", data.id), data);
@@ -95,6 +95,7 @@ async function AddCliente(dataReceived) {
         return null;
     }
 }
+
 async function UpdateCliente(dataReceived) {
     console.log(dataReceived)
     try {
