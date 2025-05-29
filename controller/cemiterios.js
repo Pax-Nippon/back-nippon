@@ -10,7 +10,6 @@ const {
 } = require("firebase/firestore");
 const { uniKey } = require("../functions");
 
-
 // Função para listar todos os cemitérios
 async function getCemiterios() {
   try {
@@ -27,7 +26,7 @@ async function getCemiterios() {
 }
 
 // Função para criar um novo cemitério
-async function addCemiterios({ codigo, nome }) {
+async function addCemiterios({ codigo, nome, cep, endereco, bairro, numero }) {
   try {
     const id = uniKey(20); // Gera um ID único de 20 caracteres
 
@@ -35,9 +34,21 @@ async function addCemiterios({ codigo, nome }) {
       id: id,
       codigo: codigo,
       nome: nome,
+      cep: cep,
+      endereco: endereco,
+      bairro: bairro,
+      numero: numero,
     });
 
-    console.log("Cemitério criado com sucesso:", { id, codigo, nome });
+    console.log("Cemitério criado com sucesso:", {
+      id,
+      codigo,
+      nome,
+      cep,
+      endereco,
+      bairro,
+      numero,
+    });
     return { id };
   } catch (error) {
     console.error("Erro ao criar cemitério:", error.message);
@@ -46,16 +57,31 @@ async function addCemiterios({ codigo, nome }) {
 }
 
 // Função para atualizar um cemitério existente
-async function updateCemiterios(id, { codigo, nome }) {
+async function updateCemiterios(
+  id,
+  { codigo, nome, cep, endereco, bairro, numero }
+) {
   try {
     const docRef = doc(db, "cemiterios", id);
 
     await updateDoc(docRef, {
       codigo: codigo,
       nome: nome,
+      cep: cep,
+      endereco: endereco,
+      bairro: bairro,
+      numero: numero,
     });
 
-    console.log("Cemitério atualizado com sucesso:", { id, codigo, nome });
+    console.log("Cemitério atualizado com sucesso:", {
+      id,
+      codigo,
+      nome,
+      cep,
+      endereco,
+      bairro,
+      numero,
+    });
     return true;
   } catch (error) {
     console.error("Erro ao atualizar cemitério:", error.message);

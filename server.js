@@ -819,14 +819,14 @@ app.get('/api/cemiterios', verificarToken, async (req, res) => {
 // Rota para criar um novo cemitério
 app.post('/api/cemiterios', verificarToken, havePermissionAdministrador, async (req, res) => {
     try {
-        const { codigo, nome } = req.body;
+        const { codigo, nome, cep, endereco, bairro, numero } = req.body;
 
         // Validação básica
         if (!codigo || !nome) {
             return res.status(400).json({ message: 'Os campos codigo e nome são obrigatórios' });
         }
 
-        const result = await cemiterios.addCemiterios({ codigo, nome });
+        const result = await cemiterios.addCemiterios({ codigo, nome, cep, endereco, bairro, numero });
 
         if (result) {
             res.status(201).json({
@@ -845,14 +845,14 @@ app.post('/api/cemiterios', verificarToken, havePermissionAdministrador, async (
 // Rota para atualizar um cemitério existente
 app.put('/api/cemiterios/:id', verificarToken, havePermissionAdministrador, async (req, res) => {
     try {
-        const { codigo, nome } = req.body;
+        const { codigo, nome, cep, endereco, bairro, numero } = req.body;
         const id = req.params.id;
 
         if (!codigo || !nome) {
             return res.status(400).json({ message: 'Os campos codigo e nome são obrigatórios' });
         }
 
-        const success = await cemiterios.updateCemiterios(id, { codigo, nome });
+        const success = await cemiterios.updateCemiterios(id, { codigo, nome, cep, endereco, bairro, numero });
 
         if (success) {
             res.status(200).json({ message: 'Cemitério atualizado com sucesso' });
