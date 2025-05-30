@@ -65,6 +65,9 @@ async function AddCliente(dataReceived) {
                 endereco: dataReceived.endereco || '',
                 bairro: dataReceived.bairro || '',
                 number_end: dataReceived.number_end || '',
+                tipo_residencia: dataReceived.tipo_residencia || '',
+                bloco: dataReceived.bloco || '',
+                numero_apartamento: dataReceived.numero_apartamento || '',
             },
             pais: {
                 mae: {
@@ -78,6 +81,8 @@ async function AddCliente(dataReceived) {
             },
             local_trabalho: dataReceived.local_trabalho || '',
             telefone_trabalho: dataReceived.telefone_trabalho || '',
+            matricula_cassems: dataReceived.matricula_cassems || '', // <-- Adicionado
+            setor_trabalho: dataReceived.setor_trabalho || '',       // <-- Adicionado
             endereco_cobranca: {
                 cep: dataReceived?.endereco_cobranca?.cep || '',
                 cidade: dataReceived?.endereco_cobranca?.cidade || '',
@@ -85,6 +90,9 @@ async function AddCliente(dataReceived) {
                 bairro: dataReceived?.endereco_cobranca?.bairro || '',
                 endereco: dataReceived?.endereco_cobranca?.endereco || '',
                 number_end: dataReceived?.endereco_cobranca?.number_end || '',
+                tipo_residencia: dataReceived?.endereco_cobranca?.tipo_residencia || '',
+                bloco: dataReceived?.endereco_cobranca?.bloco || '',
+                numero_apartamento: dataReceived?.endereco_cobranca?.numero_apartamento || '',
             },
             id: uniKey(25)
         };
