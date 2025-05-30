@@ -677,7 +677,7 @@ async function gerarMensalidadesTodosContratos(dataReceived) {
         const querySnap = await getDocs(
             query(
                 collection(db, "contratos"),
-                where('tipo_cliente', '==', 0)
+                where('tipo_cliente', '!=', 5)
             )
         );
         const configData = await getConfigComponents();
