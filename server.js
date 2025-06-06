@@ -188,7 +188,7 @@ app.post('/mensalidades/gerarMensalidadesTodosContratos', verificarToken, havePe
 })
 
 //Planos
-app.get('/planos/getAllPlanos', verificarToken, havePermissionAdministrador, async (req, res) => {
+app.get('/planos/getAllPlanos', verificarToken, async (req, res) => {
     try {
         const data = await planos.getPlanos();
         res.json(data);
@@ -367,7 +367,7 @@ app.get('/arquivos/getArquivo/:id', verificarToken, async (req, res) => {
 
 
 //-----------------------------------------------------------Serviços-----------------------------------------------------------------------
-app.get('/servicos/getAllServicos', verificarToken, havePermissionAdministrador, async (req, res) => {
+app.get('/servicos/getAllServicos', verificarToken, async (req, res) => {
     try {
         const data = await servicos.getServicos();
         res.json(data);
