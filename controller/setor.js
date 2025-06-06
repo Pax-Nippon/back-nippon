@@ -30,7 +30,7 @@ async function getSetores() {
 }
 
 // Função para criar um novo departamento
-async function addSetores({ codigo, descricao, cobrador, comissao }) {
+async function addSetores({ codigo, descricao}) {
   try {
     const id = uniKey(20); // Gera um ID único de 20 caracteres
 
@@ -38,11 +38,9 @@ async function addSetores({ codigo, descricao, cobrador, comissao }) {
       id: id,
       codigo: codigo,
       descricao: descricao,
-      cobrador: cobrador,
-      comissao: comissao,
     });
 
-    console.log("Setor criado com sucesso:", { id, codigo, descricao, cobrador, comissao });
+    console.log("Setor criado com sucesso:", { id, codigo, descricao});
     return { id };
   } catch (error) {
     console.error("Erro ao criar setor:", error.message);
@@ -58,8 +56,6 @@ async function updateSetores(id, { codigo, descricao, cobrador, comissao }) {
     await updateDoc(docRef, {
         codigo: codigo,
         descricao: descricao,
-        cobrador: cobrador,
-        comissao: comissao,
     });
 
     console.log("Setor atualizado com sucesso:", { id, codigo, descricao, cobrador, comissao });

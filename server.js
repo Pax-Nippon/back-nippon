@@ -746,14 +746,14 @@ app.get('/api/setores', verificarToken, async (req, res) => {
 // Rota para criar um novo departamento
 app.post('/api/setores', verificarToken, havePermissionAdministrador, async (req, res) => {
     try {
-        const { codigo, descricao, cobrador, comissao } = req.body;
+        const { codigo, descricao} = req.body;
 
         // Validação básica
-        if (!codigo || !descricao || !cobrador || !comissao) {
+        if (!codigo || !descricao ) {
             return res.status(400).json({ message: 'Os campos codigo, descricao, cobrador e comissao são obrigatórios' });
         }
 
-        const result = await setores.addSetores({codigo, descricao, cobrador, comissao});
+        const result = await setores.addSetores({codigo, descricao});
 
         if (result) {
             res.status(201).json({
