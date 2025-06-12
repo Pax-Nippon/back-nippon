@@ -24,6 +24,7 @@ const cemiterios = require('./controller/cemiterios');
 const medicosClinicas = require('./controller/medicosClinicas');
 const schedule = require('node-schedule');
 const path = require('path');
+const { loginCliente } = require('./controller/clientes');
 const { verificarToken, havePermissionAdministrador, havePermissionEditor, havePermissionVendedor } = require('./controller/authentication');
 const cors = require("cors");
 const corsOptions = {
@@ -54,6 +55,19 @@ app.post('/login', async (req, res) => {
         res.status(400).json({ message: 'Usuário ou senha inválidos' });
     }
 })
+
+app.post('/login-cliente', async (req, res) => {
+    try {
+        console.log('Dados recebidos:', req.body);
+        const user = req.body;
+        const cliente = await loginCliente(user);
+        res.status(200).json(cliente);
+    } catch (error) {
+        console.error('Erro no backend:', error.message);
+        res.status(400).json({ message: error.message });
+    }
+});
+
 app.get('/', (req, res) => {
     res.send('Hello World!');
 });
@@ -273,6 +287,7 @@ app.put('/clientes/updateCliente', verificarToken, async (req, res) => {
         res.status(400).json({ message: 'error' });
     }
 })
+
 
 //Contratos
 app.get('/contratos/getContratos/:id', verificarToken, async (req, res) => {
