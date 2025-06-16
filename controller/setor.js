@@ -20,7 +20,7 @@ async function getSetores() {
     const data = [];
     const querySnap = await getDocs(collection(db, "setores"));
     querySnap.forEach((doc) => {
-      data.push({ id: doc.id, ...doc.data() }); // Inclui todos os campos
+      data.push(doc.data());
     });
     return data;
   } catch (error) {
@@ -30,18 +30,12 @@ async function getSetores() {
 }
 
 // Função para criar um novo departamento
-async function addSetores({ codigo, descricao}) {
+async function addSetores(dataReceived) {
   try {
-    const id = uniKey(20); // Gera um ID único de 20 caracteres
-
-    await setDoc(doc(db, "setores", id), {
-      id: id,
-      codigo: codigo,
-      descricao: descricao,
-    });
-
-    console.log("Setor criado com sucesso:", { id, codigo, descricao});
-    return { id };
+    console.log(dataReceived)
+    await setDoc(doc(db, "setores", String(dataReceived.id)), dataReceived);
+    console.log("Setor criado com sucesso:");
+    return dataReceived;
   } catch (error) {
     console.error("Erro ao criar setor:", error.message);
     return null;
@@ -49,16 +43,15 @@ async function addSetores({ codigo, descricao}) {
 }
 
 // Função para atualizar um departamento existente
-async function updateSetores(id, { codigo, descricao, cobrador, comissao }) {
+async function updateSetores(dataReceived) {
   try {
-    const docRef = doc(db, "setores", id);
+    const docRef = doc(db, "setores", dataReceived.id);
 
     await updateDoc(docRef, {
-        codigo: codigo,
-        descricao: descricao,
+        ...dataReceived
     });
 
-    console.log("Setor atualizado com sucesso:", { id, codigo, descricao, cobrador, comissao });
+    console.log("Setor atualizado com sucesso:");
     return true;
   } catch (error) {
     console.error("Erro ao atualizar setor:", error.message);
@@ -69,7 +62,7 @@ async function updateSetores(id, { codigo, descricao, cobrador, comissao }) {
 // Função para deletar um departamento
 async function deleteSetores(id) {
   try {
-    const docRef = doc(db, "setor", id);
+    const docRef = doc(db, "setores", id);
     await deleteDoc(docRef);
     console.log("Setor deletado com sucesso:", id);
     return true;

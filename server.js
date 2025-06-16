@@ -26,6 +26,8 @@ const schedule = require('node-schedule');
 const path = require('path');
 const { verificarToken, havePermissionAdministrador, havePermissionEditor, havePermissionVendedor } = require('./controller/authentication');
 const cors = require("cors");
+const { createCustomer } = require('./controller/Asaas/ClienteAsaas');
+    const { createPaymentLink, listarLinksPayment } = require('./controller/Asaas/LinkPagamentoAsaas');
 const corsOptions = {
     origin: '*',
     credentials: true,            //access-control-allow-credentials:true
@@ -746,22 +748,13 @@ app.get('/api/setores', verificarToken, async (req, res) => {
 // Rota para criar um novo departamento
 app.post('/api/setores', verificarToken, havePermissionAdministrador, async (req, res) => {
     try {
-        const { codigo, descricao} = req.body;
-
-        // Validação básica
-        if (!codigo || !descricao ) {
-            return res.status(400).json({ message: 'Os campos codigo, descricao, cobrador e comissao são obrigatórios' });
-        }
-
-        const result = await setores.addSetores({codigo, descricao});
+        const data = req.body;
+        const result = await setores.addSetores(data);
 
         if (result) {
             res.status(201).json({
-                message: 'Setor criado com sucesso',
-                id: result.id,
+                message: 'Setor criado com sucesso'
             });
-        } else {
-            res.status(500).json({ message: 'Erro ao criar setor' });
         }
     } catch (error) {
         console.error("Erro ao criar setor:", error.message);
@@ -962,6 +955,75 @@ app.delete('/api/medicos_clinicas/:id', verificarToken, havePermissionAdministra
     } catch (error) {
         console.error("Erro ao deletar médico ou clínica:", error.message);
         res.status(500).json({ message: 'Erro ao deletar médico ou clínica' });
+    }
+});
+
+//------------------Asaas----------------------//
+
+app.post('/api/asaas/createCustomer', async (req, res) => {
+    try {
+        const data = req.body;
+        const result = await createCustomer(data);
+        if (result) {
+            res.status(200).json({ message: 'Cliente criado com sucesso' });
+        } else {
+            res.status(500).json({ message: 'Erro ao criar cliente' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao criar cliente' });
+    }
+});
+
+app.post('/api/asaas/createPaymentLink', async (req, res) => {
+    try {
+        const data = req.body;
+        const result = await createPaymentLink(data);
+        if (result) {
+            res.status(200).json({ 
+                success: true,
+                message: 'Link de pagamento criado com sucesso', 
+                data: result 
+            });
+        } else {
+            res.status(400).json({ 
+                success: false,
+                message: 'Erro ao criar link de pagamento' 
+            });
+        }
+    } catch (error) {
+        console.error('Error creating payment link:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Erro ao criar link de pagamento',
+            error: error.response?.data || error.message 
+        });
+    }
+});
+
+// Rota para listar pagamentos
+app.get('/api/asaas/payments', async (req, res) => {
+    try {
+        const filters = {
+            customer: req.query.customer,
+            status: req.query.status,
+            startDate: req.query.startDate,
+            endDate: req.query.endDate,
+            limit: req.query.limit,
+            offset: req.query.offset
+        };
+
+        const payments = await listarLinksPayment(filters);
+        res.status(200).json({ 
+            success: true,
+            data: payments 
+        });
+    } catch (error) {
+        console.error('Error listing payments:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Erro ao listar pagamentos',
+            error: error.response?.data || error.message 
+        });
     }
 });
 

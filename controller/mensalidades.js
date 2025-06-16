@@ -440,105 +440,221 @@ async function getMensalidadesAtrasadasQnt(qntMin, qntMax, idCliente = null) {
 
 async function getClientesByQuery(querys) {
     try {
-        let queryField;
-        const data = [];
-        let activeData = false;
-        console.log(querys)
+        let clientIdsFromContracts = null; // Use null to indicate no contract-based filtering yet
+        let clientIdsFromClients = null;   // Use null to indicate no client-based filtering yet
+
+        // --- Handle queries that directly affect the 'clientes' collection or can easily derive client IDs ---
+
+        // Search by name (on 'clientes')
         if (querys?.nome) {
-            queryField = "nome_titular";
             const nameAux = querys.nome.toUpperCase();
             const querySnap = await getDocs(
                 query(
                     collection(db, "clientes"),
-                    where(queryField, ">=", nameAux),
-                    where(queryField, "<", nameAux + "\uf8ff")
+                    where("nome_titular", ">=", nameAux),
+                    where("nome_titular", "<", nameAux + "\uf8ff")
                 )
             );
-            querySnap.forEach((doc) => {
-                const dataAux = doc.data();
-                const existingData = data.find(existing => existing?.id === dataAux.id);
-                if (!existingData) {
-                    data.push(dataAux);
-                }
-            });
+            const currentClientIds = new Set();
+            querySnap.forEach((doc) => currentClientIds.add(doc.id));
+            clientIdsFromClients = currentClientIds;
         }
+
+        // Search by CPF (on 'clientes')
         if (querys?.cpf) {
-            queryField = "cpf";
             const querySnap = await getDocs(
                 query(
                     collection(db, "clientes"),
-                    where(queryField, ">=", querys?.cpf),
-                    where(queryField, "<", querys?.cpf + "\uf8ff"),
+                    where("cpf", ">=", querys.cpf),
+                    where("cpf", "<", querys.cpf + "\uf8ff"),
                 )
             );
-            querySnap.forEach((doc) => {
-                const dataAux = doc.data();
-                const existingData = data.find(existing => existing.id === dataAux.id);
-                if (!existingData) {
-                    data.push(dataAux);
-                }
-            });
+            const currentClientIds = new Set();
+            querySnap.forEach((doc) => currentClientIds.add(doc.id));
+
+            if (clientIdsFromClients === null) {
+                clientIdsFromClients = currentClientIds;
+            } else {
+                // Intersect with existing clientIdsFromClients
+                clientIdsFromClients = new Set([...clientIdsFromClients].filter(id => currentClientIds.has(id)));
+            }
         }
+
+        // Search by registration date range (on 'clientes')
+        if (querys?.data_cadastro_inicio && querys?.data_cadastro_final) {
+            const querySnap = await getDocs(
+                query(
+                    collection(db, "clientes"),
+                    where("data_cadastro", ">=", querys.data_cadastro_inicio),
+                    where("data_cadastro", "<=", querys.data_cadastro_final)
+                )
+            );
+            const currentClientIds = new Set();
+            querySnap.forEach((doc) => currentClientIds.add(doc.id));
+
+            if (clientIdsFromClients === null) {
+                clientIdsFromClients = currentClientIds;
+            } else {
+                // Intersect with existing clientIdsFromClients
+                clientIdsFromClients = new Set([...clientIdsFromClients].filter(id => currentClientIds.has(id)));
+            }
+        }
+
+        // Search by department (on 'clientes')
+        if (querys?.departamento) {
+            const querySnap = await getDocs(
+                query(
+                    collection(db, "clientes"),
+                    where("departamento", "==", querys.departamento)
+                )
+            );
+            const currentClientIds = new Set();
+            querySnap.forEach((doc) => currentClientIds.add(doc.id));
+
+            if (clientIdsFromClients === null) {
+                clientIdsFromClients = currentClientIds;
+            } else {
+                // Intersect with existing clientIdsFromClients
+                clientIdsFromClients = new Set([...clientIdsFromClients].filter(id => currentClientIds.has(id)));
+            }
+        }
+
+        // --- Handle queries that affect the 'contratos' collection and yield client IDs ---
+
+        // Search by due date (on 'contratos')
         if (querys?.dia_vencimento_mensalidade) {
-            queryField = "dia_vencimento";
-            activeData = true;
             const querySnap = await getDocs(
                 query(
                     collection(db, "contratos"),
-                    where(queryField, "==", querys?.dia_vencimento_mensalidade),
+                    where("dia_vencimento", "==", Number(querys.dia_vencimento_mensalidade)),
                 )
             );
-            console.log(querySnap?.docs?.length)
-            if (querySnap.docs.length > 0) {
-                for (const doc of querySnap.docs) {
-                    const dataAux = doc.data();
-                    const existingData = data.find(existing => existing?.id === dataAux?.idCliente);
-                    if (!existingData) {
-                        try {
-                            console.log(dataAux.idCliente)
-                            const clienteData = await getCliente(dataAux.idCliente);
-                            console.log(clienteData)
-                            data.push(clienteData);
-                        } catch (err) {
-                            console.error(err);
-                        }
-                    }
-                }
+            const currentClientIds = new Set();
+            querySnap.forEach((doc) => currentClientIds.add(doc.data().idCliente));
 
-            }
-
-        }
-
-        if (querys?.qnt_meses_atrasos_inicio) {
-            if (activeData) {
-                const dataAux = data;
-                for (const doc of dataAux) {
-                    const mensalidadesAtrasadas = await getMensalidadesAtrasadasQnt(querys?.qnt_meses_atrasos_inicio, querys?.qnt_meses_atrasos_final, doc.id);
-                    console.log(mensalidadesAtrasadas)
-                    // if (mensalidadesAtrasadas.length > 0) {
-                    //     data.push(doc);
-                    //     activeData = true;
-                    // }
-                }
+            if (clientIdsFromContracts === null) {
+                clientIdsFromContracts = currentClientIds;
             } else {
-                const dataResult = await getMensalidadesAtrasadasQnt(querys?.qnt_meses_atrasos_inicio, querys?.qnt_meses_atrasos_final);
-                for (const doc of dataResult) {
-                    const existingData = data.find(existing => existing?.id === doc?.idCliente);
-                    if (!existingData) {
-                        try {
-                            const clienteData = await getCliente(doc.idCliente);
-                            data.push(clienteData);
-                        } catch (err) {
-                            console.error(err);
-                        }
-                    }
-                }
-
-
+                // Intersect with existing clientIdsFromContracts
+                clientIdsFromContracts = new Set([...clientIdsFromContracts].filter(id => currentClientIds.has(id)));
             }
-
         }
 
+        // Search by overdue months (on 'contratos' or derived from them)
+        if (querys?.qnt_meses_atrasos_inicio) {
+            // Assuming getMensalidadesAtrasadasQnt can return client IDs directly or data from which client IDs can be extracted.
+            // If it returns client objects, adjust to get their IDs.
+            const dataResult = await getMensalidadesAtrasadasQnt(
+                querys.qnt_meses_atrasos_inicio,
+                querys.qnt_meses_atrasos_final
+            );
+            const currentClientIds = new Set();
+            dataResult.forEach(item => {
+                // Assuming item has an 'idCliente' or 'id' field for the client. Adjust as per actual return.
+                if (item?.idCliente) {
+                    currentClientIds.add(item.idCliente);
+                } else if (item?.id) { // If getMensalidadesAtrasadasQnt returns actual client objects.
+                    currentClientIds.add(item.id);
+                }
+            });
+
+            if (clientIdsFromContracts === null) {
+                clientIdsFromContracts = currentClientIds;
+            } else {
+                // Intersect with existing clientIdsFromContracts
+                clientIdsFromContracts = new Set([...clientIdsFromContracts].filter(id => currentClientIds.has(id)));
+            }
+        }
+
+        // Search by sector (on 'contratos')
+        if (querys?.setor) {
+            const querySnap = await getDocs(
+                query(
+                    collection(db, "contratos"),
+                    where("setor_cobranca", "==", Number(querys.setor))
+                )
+            );
+            const currentClientIds = new Set();
+            querySnap.forEach((doc) => currentClientIds.add(doc.data().idCliente));
+
+            if (clientIdsFromContracts === null) {
+                clientIdsFromContracts = currentClientIds;
+            } else {
+                // Intersect with existing clientIdsFromContracts
+                clientIdsFromContracts = new Set([...clientIdsFromContracts].filter(id => currentClientIds.has(id)));
+            }
+        }
+
+        // Search by plan (on 'contratos')
+        if (querys?.plano) {
+            const querySnap = await getDocs(
+                query(
+                    collection(db, "contratos"),
+                    where("convenio", "==", querys.plano)
+                )
+            );
+            const currentClientIds = new Set();
+            querySnap.forEach((doc) => currentClientIds.add(doc.data().idCliente));
+
+            if (clientIdsFromContracts === null) {
+                clientIdsFromContracts = currentClientIds;
+            } else {
+                // Intersect with existing clientIdsFromContracts
+                clientIdsFromContracts = new Set([...clientIdsFromContracts].filter(id => currentClientIds.has(id)));
+            }
+        }
+
+        // Search by client type (on 'contratos')
+        if (querys?.tipo_cliente) {
+            const querySnap = await getDocs(
+                query(
+                    collection(db, "contratos"),
+                    where('tipo_cliente', "==", Number(querys.tipo_cliente)),
+                )
+            );
+            const currentClientIds = new Set();
+            querySnap.forEach((doc) => currentClientIds.add(doc.data().idCliente));
+
+            if (clientIdsFromContracts === null) {
+                clientIdsFromContracts = currentClientIds;
+            } else {
+                // Intersect with existing clientIdsFromContracts
+                clientIdsFromContracts = new Set([...clientIdsFromContracts].filter(id => currentClientIds.has(id)));
+            }
+        }
+
+        // --- Combine results from 'clientes' and 'contratos' based queries ---
+
+        let finalClientIds = new Set();
+
+        if (clientIdsFromClients !== null && clientIdsFromContracts !== null) {
+            // If both types of filters were applied, intersect them
+            finalClientIds = new Set([...clientIdsFromClients].filter(id => clientIdsFromContracts.has(id)));
+        } else if (clientIdsFromClients !== null) {
+            // Only client-based filters were applied
+            finalClientIds = clientIdsFromClients;
+        } else if (clientIdsFromContracts !== null) {
+            // Only contract-based filters were applied
+            finalClientIds = clientIdsFromContracts;
+        } else {
+            // No filters were applied or all yielded no results
+            return [];
+        }
+
+        const data = [];
+        // Fetch client data for the final set of IDs
+        for (const clientId of finalClientIds) {
+            try {
+                const clienteData = await getCliente(clientId);
+                if (clienteData) { // Ensure data was actually returned
+                    data.push(clienteData);
+                }
+            } catch (err) {
+                console.error(`Error fetching client ${clientId}:`, err);
+            }
+        }
+
+        console.log("Final filtered data:", data);
         return data;
 
     } catch (error) {
@@ -546,7 +662,6 @@ async function getClientesByQuery(querys) {
         return null;
     }
 }
-
 
 async function getMensalidadesBySetorCobranca(dataReceived) {
     const data = [];
@@ -732,11 +847,11 @@ async function gerarMensalidadesTodosContratos(dataReceived) {
                         try {
                             await setDoc(doc(db, "mensalidades", mensalidadeData.id), mensalidadeData);
                             console.log('Mensalidade criada com ID:', mensalidadeData.id);
-                          } catch (err) {
+                        } catch (err) {
                             console.error('Erro ao criar mensalidade:', err.message);
-                          }
-                          
-                     
+                        }
+
+
                         // results.success.push({
                         //     contratoId: contrato.id,
                         //     clienteId: contrato.idCliente,

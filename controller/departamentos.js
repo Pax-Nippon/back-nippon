@@ -19,7 +19,6 @@ async function getDepartamentos() {
   try {
     const data = [];
     const querySnap = await getDocs(collection(db, "departamentos"));
-    console.log("Documentos encontrados:", querySnap.size); // Log do número de documentos encontrados
     querySnap.forEach((doc) => {
       data.push({ id: doc.id, ...doc.data() }); // Inclui todos os campos
     });
