@@ -61,6 +61,25 @@ async function isLogged(token) {
     }
 }
 
+async function isClienteLogged(token) {
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const clienteId = decoded.userId; // Obtém o ID do cliente do token
+        const clienteRef = doc(db, "clientes", clienteId);
+        const clienteSnap = await getDoc(clienteRef);
+        if (clienteSnap.exists()) {
+            const cliente = clienteSnap.data();
+            return cliente           
+        }
+        else { 
+             throw new Error('Cliente não encontrado'); // Retorna os dados do cliente
+        }
+    } catch (error) {
+        console.error('Erro ao validar cliente:', error.message);
+        throw new Error('Token inválido ou cliente não encontrado');
+    }
+}
+
 async function havePermissionVendedor(req, res, next){
     try {
         const token = req.header('x-access-token');
@@ -109,4 +128,4 @@ async function havePermissionAdministrador(req, res, next){
 
     }
 }
-module.exports = { getUser, verificarToken, isLogged, havePermissionVendedor, havePermissionEditor, havePermissionAdministrador};
+module.exports = { getUser, verificarToken, isLogged,isClienteLogged, havePermissionVendedor, havePermissionEditor, havePermissionAdministrador};

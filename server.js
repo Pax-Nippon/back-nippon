@@ -24,6 +24,8 @@ const cemiterios = require('./controller/cemiterios');
 const medicosClinicas = require('./controller/medicosClinicas');
 const schedule = require('node-schedule');
 const path = require('path');
+const { loginCliente } = require('./controller/clientes');
+const {isClienteLogged} = require('./controller/authentication');
 const { verificarToken, havePermissionAdministrador, havePermissionEditor, havePermissionVendedor } = require('./controller/authentication');
 const cors = require("cors");
 const { createCustomer } = require('./controller/Asaas/ClienteAsaas');
@@ -56,6 +58,19 @@ app.post('/login', async (req, res) => {
         res.status(400).json({ message: 'Usuário ou senha inválidos' });
     }
 })
+
+app.post('/login-cliente', async (req, res) => {
+    try {
+        console.log('Dados recebidos:', req.body);
+        const user = req.body;
+        const cliente = await loginCliente(user);
+        res.status(200).json(cliente);
+    } catch (error) {
+        console.error('Erro no backend:', error.message);
+        res.status(400).json({ message: error.message });
+    }
+});
+
 app.get('/', (req, res) => {
     res.send('Hello World!');
 });
@@ -70,6 +85,20 @@ app.get('/isLogged', async (req, res) => {
         res.status(400).json({ message: 'Usuário não autenticado' });
     }
 })
+
+app.get('/isClienteLogged', async (req, res) => {
+    const token = req.header('x-access-token'); // O token deve ser enviado no cabeçalho da requisição
+    if (!token) {
+        return res.status(400).json({ message: 'Token não fornecido' });
+    }
+    try {
+        // Valida o token e busca os dados do cliente
+        const cliente = await isClienteLogged(token);
+        res.status(200).json({ message: 'Cliente autenticado com sucesso', cliente });
+    } catch (error) {
+        res.status(401).json({ message: error.message });
+    }
+});
 
 
 //Usuários
@@ -275,6 +304,7 @@ app.put('/clientes/updateCliente', verificarToken, async (req, res) => {
         res.status(400).json({ message: 'error' });
     }
 })
+
 
 //Contratos
 app.get('/contratos/getContratos/:id', verificarToken, async (req, res) => {
