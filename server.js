@@ -25,6 +25,7 @@ const medicosClinicas = require('./controller/medicosClinicas');
 const schedule = require('node-schedule');
 const path = require('path');
 const { loginCliente } = require('./controller/clientes');
+const {isClienteLogged} = require('./controller/authentication');
 const { verificarToken, havePermissionAdministrador, havePermissionEditor, havePermissionVendedor } = require('./controller/authentication');
 const cors = require("cors");
 const corsOptions = {
@@ -82,6 +83,20 @@ app.get('/isLogged', async (req, res) => {
         res.status(400).json({ message: 'Usuário não autenticado' });
     }
 })
+
+app.get('/isClienteLogged', async (req, res) => {
+    const token = req.header('x-access-token'); // O token deve ser enviado no cabeçalho da requisição
+    if (!token) {
+        return res.status(400).json({ message: 'Token não fornecido' });
+    }
+    try {
+        // Valida o token e busca os dados do cliente
+        const cliente = await isClienteLogged(token);
+        res.status(200).json({ message: 'Cliente autenticado com sucesso', cliente });
+    } catch (error) {
+        res.status(401).json({ message: error.message });
+    }
+});
 
 
 //Usuários
