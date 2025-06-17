@@ -21,4 +21,24 @@ const createCustomer = async (customerData) => {
     }
 };
 
-module.exports = { createCustomer };
+const searchCustomer = async (searchParams) => {
+    try {
+        // Construir query string com os parâmetros de busca
+        const queryParams = new URLSearchParams();
+        if (searchParams.cpfCnpj) queryParams.append('cpfCnpj', searchParams.cpfCnpj);
+        if (searchParams.name) queryParams.append('name', searchParams.name);
+        if (searchParams.email) queryParams.append('email', searchParams.email);
+        if (searchParams.limit) queryParams.append('limit', searchParams.limit);
+        if (searchParams.offset) queryParams.append('offset', searchParams.offset);
+        const queryString = queryParams.toString();
+        const url = `/customers${queryString ? `?${queryString}` : ''}`;
+        const response = await api.get(url);
+        console.log(response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error searching customer:', error.response?.data || error.message);
+        throw error;
+    }
+};
+
+module.exports = { createCustomer, searchCustomer };

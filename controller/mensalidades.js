@@ -5,6 +5,8 @@ const { uniKey, formatarTimestamp, obterDataFormatadaHoje } = require('../functi
 const { getContratos } = require('./contratos');
 const { getConfigComponents } = require('./configuracoes');
 const { getCliente } = require('./clientes');
+const { createPaymentLink } = require('./Asaas/LinkPagamentoAsaas');
+const { getAsaasPayments } = require('./Asaas/LinkPagamentoAsaas');
 
 async function getMensalidadesVaoVencer10dias() {
     try {
@@ -217,6 +219,26 @@ async function addBoletoCarne(data) {
         await updateDoc(doc(db, "mensalidades", mensalidade.id), { "carneData": carneData });
     });
 }
+
+async function gerarAsaasPayment(data) {
+    try {
+        const dataAux = {
+            idAsaas: data.id,
+            idCliente: data.idCliente,
+            idContrato: data.idContrato,
+            idPlano: data.idPlano,
+            idMensalidade: data.id,
+            valor: data.valor,
+            data: new Date(),
+        }
+        await setDoc(doc(db, "asaasPayments", dataAux.id), dataAux);
+    }
+    catch (error) {
+        console.error('Erro ao fazer a requisição:', error.message);
+        return null;
+    }
+}
+
 
 async function getMensalidadeCarne(data) {
     let idQuery = data.data[0]?.custom_id;
@@ -882,4 +904,4 @@ async function gerarMensalidadesTodosContratos(dataReceived) {
     }
 }
 
-module.exports = { getMensalidadeUnica, getClientesByQuery, getMensalidadesBySetorCobranca, addBoleto, getMensalidadeCarne, getMensalidadesVencidas10Dias, getMensalidadesVencidas3Dias, getMensalidadesVencemHoje, getTodasMensalidades, getMensalidadesAtrasadasQnt, pagarMensalidade, gerarMensalidade, gerarMensalidadeUnica, updateValue, addBoletoCarne, gerarMensalidadesTodosContratos };
+module.exports = { getMensalidadeUnica, gerarAsaasPayment , getClientesByQuery, getMensalidadesBySetorCobranca, addBoleto, getMensalidadeCarne, getMensalidadesVencidas10Dias, getMensalidadesVencidas3Dias, getMensalidadesVencemHoje, getTodasMensalidades, getMensalidadesAtrasadasQnt, pagarMensalidade, gerarMensalidade, gerarMensalidadeUnica, updateValue, addBoletoCarne, gerarMensalidadesTodosContratos };

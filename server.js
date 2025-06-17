@@ -25,11 +25,11 @@ const medicosClinicas = require('./controller/medicosClinicas');
 const schedule = require('node-schedule');
 const path = require('path');
 const { loginCliente } = require('./controller/clientes');
-const {isClienteLogged} = require('./controller/authentication');
+const { isClienteLogged } = require('./controller/authentication');
 const { verificarToken, havePermissionAdministrador, havePermissionEditor, havePermissionVendedor } = require('./controller/authentication');
 const cors = require("cors");
-const { createCustomer } = require('./controller/Asaas/ClienteAsaas');
-    const { createPaymentLink, listarLinksPayment } = require('./controller/Asaas/LinkPagamentoAsaas');
+const { createCustomer, searchCustomer } = require('./controller/Asaas/ClienteAsaas');
+const { createPaymentLink, listarLinksPayment } = require('./controller/Asaas/LinkPagamentoAsaas');
 const corsOptions = {
     origin: '*',
     credentials: true,            //access-control-allow-credentials:true
@@ -1009,23 +1009,23 @@ app.post('/api/asaas/createPaymentLink', async (req, res) => {
         const data = req.body;
         const result = await createPaymentLink(data);
         if (result) {
-            res.status(200).json({ 
+            res.status(200).json({
                 success: true,
-                message: 'Link de pagamento criado com sucesso', 
-                data: result 
+                message: 'Link de pagamento criado com sucesso',
+                data: result
             });
         } else {
-            res.status(400).json({ 
+            res.status(400).json({
                 success: false,
-                message: 'Erro ao criar link de pagamento' 
+                message: 'Erro ao criar link de pagamento'
             });
         }
     } catch (error) {
         console.error('Error creating payment link:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
             message: 'Erro ao criar link de pagamento',
-            error: error.response?.data || error.message 
+            error: error.response?.data || error.message
         });
     }
 });
@@ -1043,16 +1043,39 @@ app.get('/api/asaas/payments', async (req, res) => {
         };
 
         const payments = await listarLinksPayment(filters);
-        res.status(200).json({ 
+        res.status(200).json({
             success: true,
-            data: payments 
+            data: payments
         });
     } catch (error) {
         console.error('Error listing payments:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
             message: 'Erro ao listar pagamentos',
-            error: error.response?.data || error.message 
+            error: error.response?.data || error.message
+        });
+    }
+});
+
+// Rota para buscar clientes
+app.get('/api/asaas/customers/search', async (req, res) => {
+    try {
+        const searchParams = {
+            cpfCnpj: req.query.cpfCnpj,
+            name: req.query.name,
+            email: req.query.email,
+            limit: req.query.limit,
+            offset: req.query.offset
+        };
+
+        const customers = await searchCustomer(searchParams);
+        res.status(200).json(customers);
+    } catch (error) {
+        console.error('Error searching customers:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao buscar clientes',
+            error: error.response?.data || error.message
         });
     }
 });
