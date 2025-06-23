@@ -22,6 +22,7 @@ const departamentos = require('./controller/departamentos');
 const setores = require('./controller/setor');
 const cemiterios = require('./controller/cemiterios');
 const medicosClinicas = require('./controller/medicosClinicas');
+const redeConveniada = require('./controller/redeConveniada');
 const schedule = require('node-schedule');
 const path = require('path');
 const { loginCliente } = require('./controller/clientes');
@@ -1077,6 +1078,54 @@ app.get('/api/asaas/customers/search', async (req, res) => {
             message: 'Erro ao buscar clientes',
             error: error.response?.data || error.message
         });
+    }
+});
+
+//----------------------- Rede Conveniada --------------------------//
+
+// Rota para criar um novo convênio
+app.post('/api/rede-conveniada', async (req, res) => {
+    try {
+        const data = req.body; // Dados do convênio enviados pelo frontend
+        const result = await redeConveniada.createConvenio(data); // Use `redeConveniada.createConvenio`
+        res.status(201).json(result);
+    } catch (error) {
+        console.error("Erro na rota /api/rede-conveniada (POST):", error.message);
+        res.status(500).json({ message: "Erro ao criar convênio" });
+    }
+});
+
+app.put('/api/rede-conveniada/:id', async (req, res) => {
+    try {
+        const id = req.params.id; // ID do convênio a ser atualizado
+        const data = req.body; // Dados atualizados enviados pelo frontend
+        const result = await redeConveniada.updateConvenio(id, data); // Use `redeConveniada.updateConvenio`
+        res.status(200).json(result);
+    } catch (error) {
+        console.error("Erro na rota /api/rede-conveniada (PUT):", error.message);
+        res.status(500).json({ message: "Erro ao atualizar convênio" });
+    }
+});
+
+app.delete('/api/rede-conveniada/:id', async (req, res) => {
+    try {
+        const id = req.params.id; // ID do convênio a ser excluído
+        const result = await redeConveniada.deleteConvenio(id); // Use `redeConveniada.deleteConvenio`
+        res.status(200).json(result);
+    } catch (error) {
+        console.error("Erro na rota /api/rede-conveniada (DELETE):", error.message);
+        res.status(500).json({ message: "Erro ao excluir convênio" });
+    }
+});
+
+app.get('/api/rede-conveniada', async (req, res) => {
+    try {
+        const filters = req.query; // Recebe os filtros enviados pelo frontend
+        const data = await redeConveniada.getRedeConveniada(filters); // Use `redeConveniada.getRedeConveniada`
+        res.status(200).json(data);
+    } catch (error) {
+        console.error("Erro na rota /api/rede-conveniada (GET):", error.message);
+        res.status(500).json({ message: "Erro ao buscar Rede Conveniada" });
     }
 });
 
