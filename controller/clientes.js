@@ -1,6 +1,7 @@
 const axios = require("axios");
 const { db } = require("../firebase");
 const jwt = require('jsonwebtoken');
+const { createCustomer } = require('./Asaas/ClienteAsaas');
 
 const {
   doc,
@@ -103,6 +104,7 @@ async function getClientesForCobranca() {
 }
 
 async function AddCliente(dataReceived) {
+  console.log(dataReceived);
   try {
     const data = {
       nome_titular: dataReceived.nome_titular?.toUpperCase() || "",
@@ -140,8 +142,8 @@ async function AddCliente(dataReceived) {
       },
       local_trabalho: dataReceived.local_trabalho || "",
       telefone_trabalho: dataReceived.telefone_trabalho || "",
-      matricula_cassems: dataReceived.matricula_cassems || "", // <-- Adicionado
-      setor_trabalho: dataReceived.setor_trabalho || "", // <-- Adicionado
+      matricula_cassems: dataReceived.matricula_cassems || "",
+      setor_trabalho: dataReceived.setor_trabalho || "",
       endereco_cobranca: {
         cep: dataReceived?.endereco_cobranca?.cep || "",
         cidade: dataReceived?.endereco_cobranca?.cidade || "",
@@ -154,8 +156,30 @@ async function AddCliente(dataReceived) {
         numero_apartamento:
           dataReceived?.endereco_cobranca?.numero_apartamento || "",
       },
-      id: uniKey(25),
+      id: uniKey(10),
+      idAsaas: "",
+      estado_civil: dataReceived.estado_civil || ""
     };
+
+    // Create customer in Asaas
+    const asaasCustomerData = {
+      name: data.nome_titular,
+      cpfCnpj: data.cpf,
+      email: data.email,
+      phone: data.telefone_princ,
+      mobilePhone: data.telefone_alt,
+      address: data.endereco.endereco,
+      addressNumber: data.endereco.number_end,
+      complement: data.endereco.bloco,
+      province: data.endereco.bairro,
+      postalCode: data.endereco.cep,
+      city: data.endereco.cidade,
+      state: data.endereco.estado
+    };
+
+    const asaasResponse = await createCustomer(asaasCustomerData, data.id);
+    data.idAsaas = asaasResponse.id;
+
     await setDoc(doc(db, "clientes", data.id), data);
     return data;
   } catch (error) {
@@ -205,6 +229,10 @@ async function UpdateCliente(dataReceived) {
       telefone_princ: dataReceived.telefone_princ,
       telefone_alt: dataReceived?.telefone_alt ? dataReceived.telefone_alt : "",
       data_nasc: dataReceived.data_nasc,
+      matricula_cassems: dataReceived?.matricula_cassems ? dataReceived.matricula_cassems : "",
+      setor_trabalho: dataReceived?.setor_trabalho ? dataReceived.setor_trabalho : "",
+      idAsaas: dataReceived?.idAsaas ? dataReceived.idAsaas : "",
+      estado_civil: dataReceived?.estado_civil ? dataReceived.estado_civil : "",
       profissao: dataReceived?.profissao ? dataReceived.profissao : "",
       religiao: dataReceived?.religiao ? dataReceived.religiao : "",
       observacoes: dataReceived?.observacoes ? dataReceived.observacoes : "",

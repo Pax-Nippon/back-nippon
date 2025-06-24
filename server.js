@@ -352,6 +352,7 @@ app.put('/contratos/updateDependente/:id', verificarToken, async (req, res) => {
     try {
         const id = req.params.id;
         const data = req.body;
+        console.log(id, data)
         const result = await contratos.updateDependente(data, id);
         res.json(result);
     } catch (error) {
@@ -990,10 +991,11 @@ app.delete('/api/medicos_clinicas/:id', verificarToken, havePermissionAdministra
 
 //------------------Asaas----------------------//
 
-app.post('/api/asaas/createCustomer', async (req, res) => {
+app.post('/api/asaas/createCustomer/:id', verificarToken, async (req, res) => {
     try {
         const data = req.body;
-        const result = await createCustomer(data);
+        const id = req.params.id;
+        const result = await createCustomer(data, id);
         if (result) {
             res.status(200).json({ message: 'Cliente criado com sucesso' });
         } else {

@@ -1,4 +1,6 @@
 const axios = require('axios');
+const { db } = require('../../firebase');
+const { updateDoc, doc } = require('firebase/firestore');
 
 //Só mudar o baseURL e o access_token
 const api = axios.create({
@@ -10,9 +12,13 @@ const api = axios.create({
     }
 });
 
-const createCustomer = async (customerData) => {
+const createCustomer = async (customerData, id) => {
     try {
         const response = await api.post('/customers', customerData);
+        const idAsaas = response.data.id;
+        const docRef = await updateDoc(doc(db, "clientes", id), {
+            idAsaas: idAsaas,
+        });
         console.log(response.data);
         return response.data;
     } catch (error) {
