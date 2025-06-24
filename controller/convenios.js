@@ -18,4 +18,4 @@ async function addClient(dataReceived) {
     return data;
 }
 
-module.exports = { addClient};
+module.exports = {addClient};
