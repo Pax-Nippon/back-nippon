@@ -154,56 +154,32 @@ async function AddCliente(dataReceived) {
 async function UpdateCliente(dataReceived) {
   console.log(dataReceived);
   try {
-    const data = {
-      nome_titular: dataReceived.nome_titular.toUpperCase(),
-      contrato: dataReceived.contrato ? dataReceived.contrato : [],
-      endereco: {
-        cep: dataReceived?.cep,
-        estado: dataReceived?.estado,
-        cidade: dataReceived?.cidade,
-        bairro: dataReceived?.bairro,
-        endereco: dataReceived?.endereco,
-        number_end: dataReceived?.number_end,
-      },
-      endereco_cobranca: {
-        cep: dataReceived?.endereco_cobranca?.cep,
-        estado: dataReceived?.endereco_cobranca?.estado,
-        cidade: dataReceived?.endereco_cobranca?.cidade,
-        bairro: dataReceived?.endereco_cobranca?.bairro,
-        endereco: dataReceived?.endereco_cobranca?.endereco,
-        number_end: dataReceived?.endereco_cobranca?.number_end,
-      },
-      pais: {
-        mae: {
-          nome: dataReceived?.pais?.mae?.nome,
-          viva: dataReceived?.pais?.mae?.viva,
-        },
-        pai: {
-          nome: dataReceived?.pais?.pai?.nome,
-          vivo: dataReceived?.pais?.pai?.vivo,
-        },
-      },
-      local_trabalho: dataReceived?.local_trabalho,
-      telefone_trabalho: dataReceived?.telefone_trabalho,
-      cpf: dataReceived.cpf,
-      rg: dataReceived.rg,
-      uf: dataReceived.uf,
-      email: dataReceived.email,
-      telefone_princ: dataReceived.telefone_princ,
-      telefone_alt: dataReceived?.telefone_alt ? dataReceived.telefone_alt : "",
-      data_nasc: dataReceived.data_nasc,
-      matricula_cassems: dataReceived?.matricula_cassems ? dataReceived.matricula_cassems : "",
-      setor_trabalho: dataReceived?.setor_trabalho ? dataReceived.setor_trabalho : "",
-      idAsaas: dataReceived?.idAsaas ? dataReceived.idAsaas : "",
-      estado_civil: dataReceived?.estado_civil ? dataReceived.estado_civil : "",
-      profissao: dataReceived?.profissao ? dataReceived.profissao : "",
-      religiao: dataReceived?.religiao ? dataReceived.religiao : "",
-      observacoes: dataReceived?.observacoes ? dataReceived.observacoes : "",
-      sexo: dataReceived?.sexo,
-      id: dataReceived.id,
-    };
-    await setDoc(doc(db, "clientes", data.id), data);
-    return data;
+    let dataAux = dataReceived;
+
+    dataAux.nome_titular = dataAux.nome_titular?.toUpperCase();
+    dataAux.endereco = {
+      cep: dataReceived.cep || "",
+      cidade: dataReceived.cidade || "",
+      estado: dataReceived.estado || "",
+      endereco: dataReceived.endereco || "",
+      bairro: dataReceived.bairro || "",
+      number_end: dataReceived.number_end || "",
+      complemento: dataReceived.complemento || "",
+    }
+    dataAux?.endereco_cobranca && (dataAux.endereco_cobranca = {
+      cep: dataReceived.endereco_cobranca.cep || "",
+      cidade: dataReceived.endereco_cobranca.cidade || "",
+      estado: dataReceived.endereco_cobranca.estado || "",
+      endereco: dataReceived.endereco_cobranca.endereco || "",
+      bairro: dataReceived.endereco_cobranca.bairro || "",
+      number_end: dataReceived.endereco_cobranca.number_end || "",
+      complemento: dataReceived.endereco_cobranca.complemento || "",
+      tipo_residencia: dataReceived.endereco_cobranca.tipo_residencia || "",
+      numero_apartamento: dataReceived.endereco_cobranca.numero_apartamento || "",
+      bloco: dataReceived.endereco_cobranca.bloco || ""
+    })
+    await setDoc(doc(db, "clientes", dataAux.id), dataAux);
+    return dataAux;
   } catch (error) {
     console.error("Erro ao fazer a requisição:", error.message);
     return null;
