@@ -38,6 +38,7 @@ async function addContrato(data) {
 async function updateContrato(data, id) {
     try {
         const dataContent = {...data};
+        console.log(dataContent)
         await updateDoc(doc(db, "contratos", id), dataContent);
         return data;
     } catch (error) {

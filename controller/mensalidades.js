@@ -328,7 +328,7 @@ async function pagarMensalidade(idMensalidade, data) {
 
 
 async function gerarMensalidade(data) {
-    // console.log(data.plano.servicos)
+    console.log(data)
     try {
         const auxQntInicial = data.mesesGerados[0].split('-');
         const auxQntFinal = data.mesesGerados[1].split('-');
@@ -405,7 +405,6 @@ async function gerarMensalidadeUnica(data) {
             // Cria uma data UTC manualmente para evitar problemas de fuso horário, mas adiciona 2 dias para compensar o fuso
             dataVenc: new Date(Date.UTC(dataVencUTC.getFullYear(), dataVencUTC.getMonth(), dataVencUTC.getDate() + 2, 0, 0, 0, 0)),
         };
-        console.log(dataAux)
         await setDoc(doc(db, "mensalidades", dataAux.id), dataAux);
         return true;
     } catch (error) {
