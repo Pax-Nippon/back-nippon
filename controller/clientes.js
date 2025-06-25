@@ -104,84 +104,47 @@ async function getClientesForCobranca() {
 }
 
 async function AddCliente(dataReceived) {
-  console.log(dataReceived);
-  try {
-    const data = {
-      nome_titular: dataReceived.nome_titular?.toUpperCase() || "",
-      sexo: dataReceived.sexo || "",
-      estado_civil: dataReceived.estado_civil || "",
-      cpf: dataReceived.cpf || "",
-      rg: dataReceived.rg || "",
-      uf: dataReceived.uf || "",
-      email: dataReceived.email || "",
-      telefone_princ: dataReceived.telefone_princ || "",
-      telefone_alt: dataReceived.telefone_alt || "",
-      data_nasc: dataReceived.data_nasc || "",
-      profissao: dataReceived.profissao || "",
-      religiao: dataReceived.religiao || "",
-      endereco: {
-        cep: dataReceived.cep || "",
-        cidade: dataReceived.cidade || "",
-        estado: dataReceived.estado || "",
-        endereco: dataReceived.endereco || "",
-        bairro: dataReceived.bairro || "",
-        number_end: dataReceived.number_end || "",
-        tipo_residencia: dataReceived.tipo_residencia || "",
-        bloco: dataReceived.bloco || "",
-        numero_apartamento: dataReceived.numero_apartamento || "",
-      },
-      pais: {
-        mae: {
-          nome: dataReceived?.pais?.mae?.nome || "",
-          viva: dataReceived?.pais?.mae?.viva ?? null,
-        },
-        pai: {
-          nome: dataReceived?.pais?.pai?.nome || "",
-          vivo: dataReceived?.pais?.pai?.vivo ?? null,
-        },
-      },
-      local_trabalho: dataReceived.local_trabalho || "",
-      telefone_trabalho: dataReceived.telefone_trabalho || "",
-      matricula_cassems: dataReceived.matricula_cassems || "",
-      setor_trabalho: dataReceived.setor_trabalho || "",
-      endereco_cobranca: {
-        cep: dataReceived?.endereco_cobranca?.cep || "",
-        cidade: dataReceived?.endereco_cobranca?.cidade || "",
-        estado: dataReceived?.endereco_cobranca?.estado || "",
-        bairro: dataReceived?.endereco_cobranca?.bairro || "",
-        endereco: dataReceived?.endereco_cobranca?.endereco || "",
-        number_end: dataReceived?.endereco_cobranca?.number_end || "",
-        tipo_residencia: dataReceived?.endereco_cobranca?.tipo_residencia || "",
-        bloco: dataReceived?.endereco_cobranca?.bloco || "",
-        numero_apartamento:
-          dataReceived?.endereco_cobranca?.numero_apartamento || "",
-      },
-      id: uniKey(10),
-      idAsaas: "",
-      estado_civil: dataReceived.estado_civil || ""
-    };
+  let dataAux = dataReceived;
 
+  dataAux.nome_titular = dataAux.nome_titular?.toUpperCase();
+  dataAux.id = dataAux.id || uniKey();
+  dataAux.endereco = {
+    cep: dataReceived.cep || "",
+    cidade: dataReceived.cidade || "",
+    estado: dataReceived.estado || "",
+    endereco: dataReceived.endereco || "",
+    bairro: dataReceived.bairro || "",
+    number_end: dataReceived.number_end || "",
+    complemento: dataReceived.complemento || "",
+  }
+  dataAux?.endereco_cobranca && (dataAux.endereco_cobranca = {
+    cep: dataReceived.endereco_cobranca.cep || "",
+    cidade: dataReceived.endereco_cobranca.cidade || "",
+    estado: dataReceived.endereco_cobranca.estado || "",
+    endereco: dataReceived.endereco_cobranca.endereco || "",
+    bairro: dataReceived.endereco_cobranca.bairro || "",
+    number_end: dataReceived.endereco_cobranca.number_end || "",
+    complemento: dataReceived.endereco_cobranca.complemento || "",
+    tipo_residencia: dataReceived.endereco_cobranca.tipo_residencia || "",
+    numero_apartamento: dataReceived.endereco_cobranca.numero_apartamento || "",
+    bloco: dataReceived.endereco_cobranca.bloco || ""
+  })
+  try {
+  
     // Create customer in Asaas
     const asaasCustomerData = {
-      name: data.nome_titular,
-      cpfCnpj: data.cpf,
-      email: data.email,
-      phone: data.telefone_princ,
-      mobilePhone: data.telefone_alt,
-      address: data.endereco.endereco,
-      addressNumber: data.endereco.number_end,
-      complement: data.endereco.bloco,
-      province: data.endereco.bairro,
-      postalCode: data.endereco.cep,
-      city: data.endereco.cidade,
-      state: data.endereco.estado
+      name: dataAux?.nome_titular,
+      cpfCnpj: dataAux?.cpf,
+      email: dataAux?.email,
+      phone: dataAux?.telefone_princ,
+      mobilePhone: dataAux?.telefone_princ,
     };
-
-    const asaasResponse = await createCustomer(asaasCustomerData, data.id);
-    data.idAsaas = asaasResponse.id;
-
-    await setDoc(doc(db, "clientes", data.id), data);
-    return data;
+    console.log(asaasCustomerData);
+    const asaasResponse = await createCustomer(asaasCustomerData, dataAux.id);
+    dataAux.idAsaas = asaasResponse.id;
+    console.log('foi');
+    await setDoc(doc(db, "clientes", dataAux.id), dataAux);
+    return dataAux;
   } catch (error) {
     console.error("Erro ao fazer a requisição:", error.message);
     return null;
