@@ -198,6 +198,27 @@ async function UpdateClienteArquivo(dataReceived, id) {
     return null;
   }
 }
+async function verificarCpf(cpf) {
+    try {
+        // Validação para garantir que o CPF foi recebido
+        if (!cpf) {
+            throw new Error("O parâmetro 'cpf' é obrigatório");
+        }
+
+        const clienteRef = collection(db, "clientes");
+        const q = query(clienteRef, where("cpf", "==", cpf));
+        const querySnapshot = await getDocs(q);
+
+        // Verifica se o cliente existe
+        if (!querySnapshot.empty) {
+            return { existe: true };
+        }
+        return { existe: false };
+    } catch (error) {
+        console.error("Erro ao verificar CPF:", error.message);
+        throw new Error("Erro ao verificar CPF");
+    }
+}
 
 module.exports = {
   getClientes,
@@ -206,4 +227,5 @@ module.exports = {
   UpdateCliente,
   UpdateClienteArquivo,
   loginCliente,
+  verificarCpf, // Adicione a função ao export
 };

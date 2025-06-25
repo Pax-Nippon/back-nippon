@@ -307,6 +307,25 @@ app.put('/clientes/updateCliente', verificarToken, async (req, res) => {
 })
 
 
+app.post('/clientes/verificarCpf', async (req, res) => {
+    console.log('Rota /clientes/verificarCpf acessada');
+    const { cpf } = req.body; // Recebe o CPF do corpo da requisição
+
+    // Validação para garantir que o CPF foi enviado
+    if (!cpf) {
+        return res.status(400).json({ error: "O parâmetro 'cpf' é obrigatório" });
+    }
+
+    try {
+        const result = await clientes.verificarCpf(cpf);
+        res.status(200).json(result);
+    } catch (error) {
+        console.error("Erro na rota /clientes/verificarCpf:", error.message);
+        res.status(500).json({ error: "Erro ao verificar CPF" });
+    }
+});
+
+
 //Contratos
 app.get('/contratos/getContratos/:id', verificarToken, async (req, res) => {
     try {
