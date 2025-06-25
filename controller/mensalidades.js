@@ -328,7 +328,6 @@ async function pagarMensalidade(idMensalidade, data) {
 
 
 async function gerarMensalidade(data) {
-    console.log(data)
     try {
         const auxQntInicial = data.mesesGerados[0].split('-');
         const auxQntFinal = data.mesesGerados[1].split('-');
