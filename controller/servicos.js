@@ -26,7 +26,7 @@ async function getServicos() {
 
 async function addServicos(data) {
     try {
-        const dataContent = {...data, id: uniKey()};
+        const dataContent = {...data, id: uniKeyNumber(5)};
         await setDoc(doc(db, "servicos", dataContent.id), dataContent);
         return data;
     } catch (error) {

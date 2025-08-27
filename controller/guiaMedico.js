@@ -1,6 +1,6 @@
 const { db } = require('../firebase');
 const { doc, getDocs, collection, setDoc, query, where, updateDoc, deleteDoc } = require("firebase/firestore");
-const { uniKey } = require('../functions');
+const { uniKeyNumber } = require('../functions');
 
 async function getGuiasMedicos() {
     try {
@@ -49,7 +49,7 @@ async function addGuiaMedico(dataReceived) {
     try {
         const data = {
             ...dataReceived,
-            id: uniKey()
+            id: uniKeyNumber(5)
         };
         await setDoc(doc(db, "guiasMedicos", data.id), data);
         return data;

@@ -1,7 +1,7 @@
 const axios = require('axios');
 const { db, storage } = require('../firebase');
 const { doc, getDocs, collection, setDoc, query, where, updateDoc } = require("firebase/firestore")
-const { uniKey } = require('../functions');
+const { uniKey, uniKeyNumber } = require('../functions');
 const { ref, uploadBytes, getDownloadURL } = require("firebase/storage");
 
 async function getContratos(idCliente) {
@@ -26,7 +26,7 @@ async function getContratos(idCliente) {
 
 async function addContrato(data) {
     try {
-        const id = uniKey(20);
+        const id = uniKeyNumber(10);
         const docRef = await setDoc(doc(db, "contratos", id), { ...data, id: id });
         return id;
     } catch (error) {

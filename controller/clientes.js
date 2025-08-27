@@ -1,3 +1,4 @@
+require('dotenv').config();
 const axios = require("axios");
 const { db } = require("../firebase");
 const jwt = require('jsonwebtoken');
@@ -14,7 +15,7 @@ const {
   getDoc,
   updateDoc,
 } = require("firebase/firestore");
-const { uniKey } = require("../functions");
+const { uniKey, uniKeyNumber } = require("../functions");
 
 async function getCliente(id) {
   try {
@@ -25,6 +26,17 @@ async function getCliente(id) {
     } else {
       return null;
     }
+  } catch (error) {
+    console.error("Erro ao fazer a requisição:", error.message);
+    return null;
+  }
+}
+
+async function getClienteByCpf(cpf) {
+  try {
+    console.log(cpf)
+    const querySnapshot = await getDocs(query(collection(db, "clientes"), where("cpf", "==", cpf)));
+    return querySnapshot.docs[0].data();
   } catch (error) {
     console.error("Erro ao fazer a requisição:", error.message);
     return null;
@@ -45,30 +57,25 @@ async function loginCliente({ usuario, senha }) {
 
     const q = query(
       clienteRef,
-      where("cpf", "==", usuario),
-      where("cpf", "==", senha)
+      where("cpf", "==", usuario)
     );
-    try {
-      const querySnapshot = await getDocs(q);
-      const user = querySnapshot.docs[0];
-      const data = user.data();
-      if (user) {
-        const token = jwt.sign(
-          { userId: user.id, permission: data.type },
-          process.env.JWT_SECRET,
-          { expiresIn: "24h" }
-        );
-        return { token, data };
-      } else {
-        return null;
-      }
-    } catch (error) {
-      console.error("Error getting documents: ", error);
+    
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.empty) {
       return null;
     }
-
-    const cliente = querySnap.docs[0].data();
-    return cliente;
+    
+    const user = querySnapshot.docs[0];
+    const data = user.data();
+    
+    const token = jwt.sign(
+      { userId: user.id, permission: data.type || 'user' },
+      process.env.JWT_SECRET || 'chave_secreta_padrao',
+      { expiresIn: "24h" }
+    );
+    
+    return { token, data };
   } catch (error) {
     console.error("Erro ao fazer login:", error.message);
     throw error;
@@ -88,26 +95,30 @@ async function getClientes() {
     return null;
   }
 }
-async function getClientesForCobranca() {
-  const usersRef = collection(db, "clientes");
-  const q = query(
-    usersRef,
-    where("contratos", "==", login),
-    where("password", "==", senha)
-  );
-  const querySnapshot = await getDocs(q);
-  const data = [];
-  querySnapshot.forEach((doc) => {
-    data.push(doc.data());
-  });
-  return data;
+async function getClientesForCobranca(login, senha) {
+  try {
+    const usersRef = collection(db, "clientes");
+    const q = query(
+      usersRef,
+      where("contratos", "==", login),
+      where("password", "==", senha)
+    );
+    const querySnapshot = await getDocs(q);
+    const data = [];
+    querySnapshot.forEach((doc) => {
+      data.push(doc.data());
+    });
+    return data;
+  } catch (error) {
+    console.error("Erro ao buscar clientes para cobrança:", error.message);
+    return [];
+  }
 }
 
 async function AddCliente(dataReceived) {
   let dataAux = dataReceived;
-
   dataAux.nome_titular = dataAux.nome_titular?.toUpperCase();
-  dataAux.id = dataAux.id || uniKey();
+  dataAux.id = dataAux.id || uniKeyNumber(10);
   dataAux.endereco = {
     cep: dataReceived.cep || "",
     cidade: dataReceived.cidade || "",
@@ -116,37 +127,30 @@ async function AddCliente(dataReceived) {
     bairro: dataReceived.bairro || "",
     number_end: dataReceived.number_end || "",
     complemento: dataReceived.complemento || "",
-  }
-  dataAux?.endereco_cobranca && (dataAux.endereco_cobranca = {
-    cep: dataReceived.endereco_cobranca.cep || "",
-    cidade: dataReceived.endereco_cobranca.cidade || "",
-    estado: dataReceived.endereco_cobranca.estado || "",
-    endereco: dataReceived.endereco_cobranca.endereco || "",
-    bairro: dataReceived.endereco_cobranca.bairro || "",
-    number_end: dataReceived.endereco_cobranca.number_end || "",
-    complemento: dataReceived.endereco_cobranca.complemento || "",
-    tipo_residencia: dataReceived.endereco_cobranca.tipo_residencia || "",
-    numero_apartamento: dataReceived.endereco_cobranca.numero_apartamento || "",
-    bloco: dataReceived.endereco_cobranca.bloco || ""
-  })
-  try {
-  
-    // Create customer in Asaas
-    const asaasCustomerData = {
-      name: dataAux?.nome_titular,
-      cpfCnpj: dataAux?.cpf,
-      email: dataAux?.email,
-      phone: dataAux?.telefone_princ,
-      mobilePhone: dataAux?.telefone_princ,
+  };
+  if (dataReceived.endereco_cobranca) {
+    dataAux.endereco_cobranca = {
+      cep: dataReceived.endereco_cobranca.cep || "",
+      cidade: dataReceived.endereco_cobranca.cidade || "",
+      estado: dataReceived.endereco_cobranca.estado || "",
+      endereco: dataReceived.endereco_cobranca.endereco || "",
+      bairro: dataReceived.endereco_cobranca.bairro || "",
+      number_end: dataReceived.endereco_cobranca.number_end || "",
+      complemento: dataReceived.endereco_cobranca.complemento || "",
+      tipo_residencia: dataReceived.endereco_cobranca.tipo_residencia || "",
+      numero_apartamento: dataReceived.endereco_cobranca.numero_apartamento || "",
+      bloco: dataReceived.endereco_cobranca.bloco || ""
     };
-    console.log(asaasCustomerData);
-    const asaasResponse = await createCustomer(asaasCustomerData, dataAux.id);
-    dataAux.idAsaas = asaasResponse.id;
-    console.log('foi');
+  }
+  try {
+    const data = await createCustomer(dataAux, dataAux.id);
+    dataAux.id_asaas = data.id;
     await setDoc(doc(db, "clientes", dataAux.id), dataAux);
     return dataAux;
   } catch (error) {
+    console.log('Erro completo:', error);
     console.error("Erro ao fazer a requisição:", error.message);
+    console.error("Stack trace:", error.stack);
     return null;
   }
 }
@@ -166,18 +170,20 @@ async function UpdateCliente(dataReceived) {
       number_end: dataReceived.number_end || "",
       complemento: dataReceived.complemento || "",
     }
-    dataAux?.endereco_cobranca && (dataAux.endereco_cobranca = {
-      cep: dataReceived.endereco_cobranca.cep || "",
-      cidade: dataReceived.endereco_cobranca.cidade || "",
-      estado: dataReceived.endereco_cobranca.estado || "",
-      endereco: dataReceived.endereco_cobranca.endereco || "",
-      bairro: dataReceived.endereco_cobranca.bairro || "",
-      number_end: dataReceived.endereco_cobranca.number_end || "",
-      complemento: dataReceived.endereco_cobranca.complemento || "",
-      tipo_residencia: dataReceived.endereco_cobranca.tipo_residencia || "",
-      numero_apartamento: dataReceived.endereco_cobranca.numero_apartamento || "",
-      bloco: dataReceived.endereco_cobranca.bloco || ""
-    })
+    if (dataReceived.endereco_cobranca) {
+      dataAux.endereco_cobranca = {
+        cep: dataReceived.endereco_cobranca.cep || "",
+        cidade: dataReceived.endereco_cobranca.cidade || "",
+        estado: dataReceived.endereco_cobranca.estado || "",
+        endereco: dataReceived.endereco_cobranca.endereco || "",
+        bairro: dataReceived.endereco_cobranca.bairro || "",
+        number_end: dataReceived.endereco_cobranca.number_end || "",
+        complemento: dataReceived.endereco_cobranca.complemento || "",
+        tipo_residencia: dataReceived.endereco_cobranca.tipo_residencia || "",
+        numero_apartamento: dataReceived.endereco_cobranca.numero_apartamento || "",
+        bloco: dataReceived.endereco_cobranca.bloco || ""
+      };
+    }
     await setDoc(doc(db, "clientes", dataAux.id), dataAux);
     return dataAux;
   } catch (error) {
@@ -211,9 +217,9 @@ async function verificarCpf(cpf) {
 
         // Verifica se o cliente existe
         if (!querySnapshot.empty) {
-            return { existe: true };
+            return false;
         }
-        return { existe: false };
+        return true;
     } catch (error) {
         console.error("Erro ao verificar CPF:", error.message);
         throw new Error("Erro ao verificar CPF");
@@ -227,5 +233,7 @@ module.exports = {
   UpdateCliente,
   UpdateClienteArquivo,
   loginCliente,
-  verificarCpf, // Adicione a função ao export
+  verificarCpf,
+  getClientesForCobranca,
+  getClienteByCpf
 };

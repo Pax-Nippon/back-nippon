@@ -11,7 +11,7 @@ const {
   deleteDoc,
   getDoc,
 } = require("firebase/firestore");
-const { uniKey } = require("../functions");
+const { uniKeyNumber } = require("../functions");
 
 
 // Função para listar todos os departamentos
@@ -30,18 +30,17 @@ async function getDepartamentos() {
 }
 
 // Função para criar um novo departamento
-async function addDepartamento({ codigo, descricao, abreviacao }) {
+async function addDepartamento({  descricao, abreviacao }) {
   try {
-    const id = uniKey(20); // Gera um ID único de 20 caracteres
+    const id = uniKeyNumber(5); 
 
     await setDoc(doc(db, "departamentos", id), {
       id: id,
-      codigo: codigo,
       descricao: descricao,
       abreviacao: abreviacao,
     });
 
-    console.log("Departamento criado com sucesso:", { id, codigo, descricao, abreviacao });
+    console.log("Departamento criado com sucesso:", { id, descricao, abreviacao });
     return { id };
   } catch (error) {
     console.error("Erro ao criar departamento:", error.message);
@@ -50,17 +49,13 @@ async function addDepartamento({ codigo, descricao, abreviacao }) {
 }
 
 // Função para atualizar um departamento existente
-async function updateDepartamento(id, { codigo, descricao, abreviacao }) {
+async function updateDepartamento(data) {
   try {
-    const docRef = doc(db, "departamentos", id);
+    const docRef = doc(db, "departamentos", data.id);
 
-    await updateDoc(docRef, {
-      codigo: codigo,
-      descricao: descricao,
-      abreviacao: abreviacao,
-    });
+    await updateDoc(docRef, data);
 
-    console.log("Departamento atualizado com sucesso:", { id, codigo, descricao, abreviacao });
+    console.log("Departamento atualizado com sucesso:", data);
     return true;
   } catch (error) {
     console.error("Erro ao atualizar departamento:", error.message);

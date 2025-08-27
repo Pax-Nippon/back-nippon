@@ -1,6 +1,4 @@
 const axios = require('axios');
-const { db } = require('../../firebase');
-const { updateDoc, doc } = require('firebase/firestore');
 
 //Só mudar o baseURL e o access_token
 const api = axios.create({
@@ -14,10 +12,19 @@ const api = axios.create({
 
 const createCustomer = async (customerData, id) => {
     try {
-        const response = await api.post('/customers', customerData);
+        const dataAux = {
+            name: customerData.nome_titular,
+            email: customerData.email,
+            cpfCnpj: customerData.cpf,
+            mobilePhone: customerData.telefone_princ,
+            postalCode: customerData.cep,
+            address: customerData.endereco.endereco,
+            addressNumber: customerData.endereco.number_end
+        }
+        const response = await api.post('/customers', dataAux);
         return response.data;
     } catch (error) {
-        console.error('Error creating customer:', error.response?.data || error.message);
+        // console.error('Error creating customer:', error.response?.data || error.message);
         throw error;
     }
 };

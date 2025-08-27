@@ -124,7 +124,7 @@ async function gerarMensalidade(idCliente) {
                 const data = {
                     idCliente: idCliente,
                     idContrato: contrato.id,
-                    id: uniKey(),
+                    id: uniKeyNumber(5),
                     valor: contrato.valor,
                     paga: false,
                     data: new Date().toLocaleString('pt-BR'),

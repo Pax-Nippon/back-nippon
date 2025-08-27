@@ -22,6 +22,7 @@ const departamentos = require('./controller/departamentos');
 const setores = require('./controller/setor');
 const cemiterios = require('./controller/cemiterios');
 const medicosClinicas = require('./controller/medicosClinicas');
+const aplicativo = require('./controller/aplicativo');
 const redeConveniada = require('./controller/redeConveniada');
 const schedule = require('node-schedule');
 const path = require('path');
@@ -30,7 +31,7 @@ const { isClienteLogged } = require('./controller/authentication');
 const { verificarToken, havePermissionAdministrador, havePermissionEditor, havePermissionVendedor } = require('./controller/authentication');
 const cors = require("cors");
 const { createCustomer, searchCustomer } = require('./controller/Asaas/ClienteAsaas');
-const { createPaymentLink, listarLinksPayment } = require('./controller/Asaas/LinkPagamentoAsaas');
+const { createPaymentLink, createNewPaymentLink, listarLinksPayment, createMultipaymentLink } = require('./controller/Asaas/LinkPagamentoAsaas');
 const corsOptions = {
     origin: '*',
     credentials: true,            //access-control-allow-credentials:true
@@ -101,8 +102,58 @@ app.get('/isClienteLogged', async (req, res) => {
     }
 });
 
+//Usuário Aplicativo
+app.get('/usuarioAplicativo/getUsuarioAplicativo/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+        const data = await aplicativo.getUsuarioAplicativo(id);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+app.post('/usuarioAplicativo/login', async (req, res) => {
+    try {
+        console.log('Dados recebidos:', req.body);
+        const user = req.body;
+        const data = await aplicativo.loginUsuarioAplicativo(user);
+        res.status(200).json(data);
+    } catch (error) {
+        console.error('Erro no backend:', error.message);
+        res.status(400).json({ message: error.message });
+    }
+});
+
+app.post('/usuarioAplicativo/addUsuarioAplicativo', async (req, res) => {
+    try {
+        const data = await aplicativo.AddUsuarioAplicativo(req.body);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+app.put('/usuarioAplicativo/updateUsuarioAplicativo/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+        const data = await aplicativo.UpdateUsuarioAplicativo(req.body, id);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+app.delete('/usuarioAplicativo/deleteUsuarioAplicativo/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+        const data = await aplicativo.DeleteUsuarioAplicativo(id);
+        res.json(data);
+    } catch (error) {   
+        res.status(400).json({ message: 'error' });
+    }
+})
 
 //Usuários
+
+
 app.get('/users/getUsers', verificarToken, havePermissionAdministrador, async (req, res) => {
     try {
         const data = await users.getUsers();
@@ -164,6 +215,17 @@ app.get('/mensalidades/getAllMensalidades/:id', verificarToken, async (req, res)
     try {
         const dataReceived = req.params.id;
         const data = await mensalidades.getTodasMensalidades(dataReceived);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
+
+// Rota para o aplicativo: retorna apenas as mensalidades do cliente autenticado via token
+app.get('/mensalidades/me', verificarToken, async (req, res) => {
+    try {
+        const userIdFromToken = req.userId;
+        const data = await mensalidades.getTodasMensalidades(userIdFromToken);
         res.json(data);
     } catch (error) {
         res.status(400).json({ message: 'error' });
@@ -249,6 +311,17 @@ app.put('/planos/updatePlano/:id', verificarToken, havePermissionAdministrador, 
 })
 
 //Clientes
+
+app.get('/clientes/getClienteByCpf/:cpf',  async (req, res) => {
+    try {
+        console.log('foi')
+        const cpf = req.params.cpf;
+        const data = await clientes.getClienteByCpf(cpf);
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+})
 app.get('/clientes/getCliente/:id', verificarToken, async (req, res) => {
     try {
         const dataReceived = req.params.id;
@@ -318,6 +391,7 @@ app.post('/clientes/verificarCpf', async (req, res) => {
 
     try {
         const result = await clientes.verificarCpf(cpf);
+        console.log(result);
         res.status(200).json(result);
     } catch (error) {
         console.error("Erro na rota /clientes/verificarCpf:", error.message);
@@ -507,13 +581,28 @@ app.post('/gerarLink/pix', verificarToken, async (req, res) => {
 })
 
 //-----------------------------------------------------------Cobrança-----------------------------------------------------------------------
-// const job = schedule.scheduleJob('16 12 * * *', async function() {
-//     //Pega Cobranca do Dia
-//     // const cobrancaDoDia = await cobrancaWhatsapp.enviaCobrancaWhatsapp(); 
+// Job de aquecimento: 17:10 (America/Sao_Paulo) inicia o WhatsApp antes do disparo
+const cobrancaWarmupJob = schedule.scheduleJob({ rule: '20 17 * * *', tz: 'America/Sao_Paulo' }, async function() {
+    try {
+        console.log('[JOB] Warmup WhatsApp (17:10 America/Sao_Paulo)');
+        await cobrancaWhatsapp.logarWhatsApp();
+        console.log('[JOB] Warmup concluído');
+    } catch (error) {
+        console.error('[JOB] Erro no warmup do WhatsApp:', error);
+    }
+});
 
-//     const data = await cobrancaWhatsapp.enviaCobrancaWhatsapp(req.body);
-//     // cobranca.cobrancaEmail(data);
-//   });
+// Job diário às 17:15 (America/Sao_Paulo) para enviar cobranças via WhatsApp
+const cobrancaDailyJob = schedule.scheduleJob({ rule: '21 17 * * *', tz: 'America/Sao_Paulo' }, async function() {
+    try {
+        console.log('[JOB] Iniciando cobrança diária (17:15 America/Sao_Paulo)');
+        // Garantia adicional de sessão ativa do WhatsApp, se necessário
+        await cobrancaWhatsapp.enviaCobrancaWhatsapp();
+        console.log('[JOB] Cobrança diária concluída');
+    } catch (error) {
+        console.error('[JOB] Erro na cobrança diária:', error);
+    }
+});
 
 
 app.post('/cobranca/gerarCobranca', async (req, res) => {
@@ -683,8 +772,9 @@ app.get('/api/departamentos', verificarToken, async (req, res) => {
 // Rota para criar um novo departamento
 app.post('/api/departamentos', verificarToken, havePermissionAdministrador, async (req, res) => {
     try {
-        const { codigo, descricao, abreviacao } = req.body;
-
+        const data = req.body;
+        const { codigo, descricao, abreviacao } = data;
+        console.log(codigo, descricao, abreviacao);
         // Validação básica
         if (!codigo || !descricao || !abreviacao) {
             return res.status(400).json({ message: 'Os campos codigo, descricao e abreviacao são obrigatórios' });
@@ -709,9 +799,8 @@ app.post('/api/departamentos', verificarToken, havePermissionAdministrador, asyn
 // Rota para atualizar um departamento existente
 app.put('/api/departamentos/:id', verificarToken, havePermissionAdministrador, async (req, res) => {
     try {
-        const { nome } = req.body;
-        const id = req.params.id;
-        const success = await departamentos.updateDepartamento(id, nome);
+        const data = {...req.params.id, ...req.body}
+        const success = await departamentos.updateDepartamento( data);
         if (success) {
             res.status(200).json({ message: 'Departamento atualizado com sucesso' });
         } else {
@@ -1033,7 +1122,7 @@ app.post('/api/asaas/createPaymentLink', async (req, res) => {
         if (result) {
             res.status(200).json({
                 success: true,
-                message: 'Link de pagamento criado com sucesso',
+                message: result.existingPayment ? 'Link de pagamento já existe' : 'Link de pagamento criado com sucesso',
                 data: result
             });
         } else {
@@ -1047,6 +1136,59 @@ app.post('/api/asaas/createPaymentLink', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Erro ao criar link de pagamento',
+            error: error.response?.data || error.message
+        });
+    }
+});
+
+app.post('/api/asaas/createNewPaymentLink', async (req, res) => {
+    try {
+        const data = req.body;
+        const result = await createNewPaymentLink(data);
+        if (result) {
+            res.status(200).json({
+                success: true,
+                message: 'Novo link de pagamento criado com sucesso',
+                data: result
+            });
+        } else {
+            res.status(400).json({
+                success: false,
+                message: 'Erro ao criar novo link de pagamento'
+            });
+        }
+    } catch (error) {
+        console.error('Error creating new payment link:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao criar novo link de pagamento',
+            error: error.response?.data || error.message
+        });
+    }
+});
+
+// Rota para criar payment link com múltiplos métodos (boleto, cartão, pix)
+app.post('/api/asaas/createMultipaymentLink', async (req, res) => {
+    try {
+        const data = req.body;
+        const result = await createMultipaymentLink(data);
+        if (result) {
+            res.status(200).json({
+                success: true,
+                message: 'Payment link criado com métodos múltiplos',
+                data: result
+            });
+        } else {
+            res.status(400).json({
+                success: false,
+                message: 'Erro ao criar payment link'
+            });
+        }
+    } catch (error) {
+        console.error('Error creating multipayment link:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao criar payment link',
             error: error.response?.data || error.message
         });
     }

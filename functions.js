@@ -8,6 +8,16 @@ function uniKey(length = 10) {
     return result;
 }
 
+function uniKeyNumber(length = 10) {
+    var result = '';
+    var characters = '0123456789';
+    var charactersLength = characters.length;
+    for (var i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+}
+
 function typeReturn(type) {
     let message;
     switch (type) {
@@ -125,4 +135,4 @@ function obterDataFormatadaHoje() {
 
   
 
-module.exports = { uniKey, typeReturn, formatarTimestamp, formatDate, limparNumero, adicionarDias, diaAmanhaString, obterDataFormatadaHoje, numberAleatorio};
+module.exports = { uniKey, uniKeyNumber, typeReturn, formatarTimestamp, formatDate, limparNumero, adicionarDias, diaAmanhaString, obterDataFormatadaHoje, numberAleatorio};

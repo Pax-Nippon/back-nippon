@@ -1,7 +1,8 @@
 const axios = require('axios');
 const { db } = require('../firebase');
 const { doc, getDocs, collection, setDoc, deleteDoc, query, where} = require("firebase/firestore")
-const {uniKey} = require('../functions');
+const {uniKeyNumber} = require('../functions');
+
 
 
 async function getUsers() {
@@ -20,13 +21,7 @@ async function getUsers() {
 
 async function AddUser(dataReceived) {
     try {
-        const data = {
-            name: dataReceived.name,
-            login: dataReceived.login,
-            password:  dataReceived.password,
-            type: dataReceived.type,
-            id: uniKey()
-        };
+        const data = {...dataReceived, id: uniKeyNumber(5)};
         await setDoc(doc(db, "users", data.id), data);
         return data;
     } catch (error) {

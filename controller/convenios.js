@@ -1,7 +1,7 @@
 const axios = require('axios');
 const { db } = require('../firebase');
 const { setDoc, doc } = require("firebase/firestore");
-const { uniKey } = require('../functions');
+const { uniKey, uniKeyNumber } = require('../functions');
 require('dotenv').config()
 
 
@@ -14,7 +14,7 @@ async function addClient(dataReceived) {
         type: dataReceived.type,
         date: new Date().toLocaleString('pt-BR'),
     };
-    await setDoc(doc(db, "disparoSms",uniKey()), data);
+    await setDoc(doc(db, "disparoSms",uniKeyNumber(5)), data);
     return data;
 }
 

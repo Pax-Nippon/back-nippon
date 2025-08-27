@@ -5,7 +5,9 @@ const fs = require('fs');
 const mensalidades = require('./mensalidades')
 const qrcode = require('qrcode-terminal');
 const async = require('async');
-const {numberAleatorio} = require('../functions');
+const { numberAleatorio } = require('../functions');
+const { createPaymentLink } = require('./Asaas/LinkPagamentoAsaas');
+const { getCliente } = require('./clientes');
 
 const SESSION_FILE_PATH = './session.json';
 let ws;
@@ -13,7 +15,7 @@ let sessionData;
 
 const withSession = async () => {
     sessionData = require(SESSION_FILE_PATH);
-    ws = new Client({ authStrategy: new LocalAuth({ dataPath: "sessions", }), webVersionCache: { type: 'remote', remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html', } });
+    ws = new Client({authStrategy: new LocalAuth({ dataPath: "sessions" })});
     ws.on('ready', () => console.log('Cliente está pronto!'));
     ws.on('auth_failure', () => {
         console.log('** O erro de autenticação regenera o QRCODE (Excluir o arquivo session.json) **');
@@ -24,16 +26,7 @@ const withSession = async () => {
 
 const withOutSession = async () => {
 
-    ws = new Client({
-        puppeteer: {
-            executablePath: '/usr/bin/brave-browser-stable',
-            args: ["--no-sandbox", "--disable-dev-shm-usage"],
-        },
-        authStrategy: new LocalAuth({ dataPath: "sessions", }), webVersionCache: { type: 'remote', remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html', },
-        puppeteer: {
-            headless: true,
-        },
-    });
+    ws = new Client({authStrategy: new LocalAuth({ dataPath: "sessions" })});
     ws.initialize();
 
     ws.on('ready', () => {
@@ -81,7 +74,7 @@ async function enviaCobrancaWhatsapp() {
         const element = data[i];
         let numberUser = data[i].telefonePrinc.replace(/\s/g, '').replace(/[^a-zA-Z0-9]/g, '');
         numberUser = numberUser.replace('@c.us', '');
-        const isTrue =  ws.isRegisteredUser(numberUser);
+        const isTrue = ws.isRegisteredUser(numberUser);
         if (numberUser.length < 10) {
             numberUser = "67" + numberUser;
         }
@@ -96,37 +89,62 @@ async function enviaCobrancaWhatsapp() {
         if (shouldSend) {
             phoneNumbers.push(numberUser);
             console.log('Enviando mensagem para:', numberUser);
-            let nameElement = element.nome.split(' ')[0];
-            nameElement = nameElement.charAt(0).toUpperCase() + nameElement.slice(1).toLowerCase();
-            let message = `Olá ${nameElement}, tudo bem? Aqui é da Pax Nippon. Estamos entrando em contato para lembrar que sua mensalidade referente a ${element.abreviacao}, no valor de R$ ${element.valor}, vence hoje.
-            
-            Você pode realizar o pagamento via Pix. O nosso Pix é 41220924000180.`
-            ws.sendMessage(numberUser, message).then(e => {
-                console.log('Mensagem enviada com sucesso para:', numberUser);
-                phoneNumbers.push(numberUser)
-                // dataTable.push({
-                //     name: element.nome,
-                //     numero: element.telefonePrinc,
-                //     email: element.email,
-                //     enviou: 'Sim'
-                // })
-                // createFile(dataTable)
 
-            }).catch(error => {
-                // dataTable.push({
-                //     name: element.nome,
-                //     numero: element.telefonePrinc,
-                //     email: element.email,
-                //     enviou: 'Não'
-                // })
-                // console.log(element.name, element.number)
-                // createFile(dataTable)
-                console.log(error)
-            });
+            const valorOriginal = Number(element.valor || (element?.element && element.element.valor) || 0);
+            const valorCorrigido = Math.round((valorOriginal + Number.EPSILON) * 100) / 100;
+
+            let paymentUrl = '';
+            getCliente(element.idCliente)
+                .then((cliente) => {
+                    const dataVenc = element?.element?.dataVenc;
+                    let dueDate = new Date();
+                    if (dataVenc && typeof dataVenc.seconds === 'number') {
+                        dueDate = new Date(dataVenc.seconds * 1000);
+                    } else if (dataVenc instanceof Date) {
+                        dueDate = dataVenc;
+                    }
+                    const yyyy = dueDate.getFullYear();
+                    const mm = String(dueDate.getMonth() + 1).padStart(2, '0');
+                    const dd = String(dueDate.getDate()).padStart(2, '0');
+
+                    const paymentData = {
+                        id: element?.element?.id,
+                        customer: cliente?.id_asaas,
+                        billingType: 'BOLETO',
+                        value: valorCorrigido,
+                        dueDate: `${yyyy}-${mm}-${dd}`,
+                        description: `Mensalidade ${element.abreviacao}`,
+                        externalReference: element?.element?.id
+                    };
+
+                    return Promise.all([
+                        createPaymentLink(paymentData),
+                        mensalidades.updateValue(element?.element?.id, valorCorrigido).catch(() => { })
+                    ]);
+                })
+                .then(([payment]) => {
+                    paymentUrl = (payment && (payment.invoiceUrl || payment.bankSlipUrl)) || '';
+
+                    let nameElement = element.nome.split(' ')[0];
+                    nameElement = nameElement.charAt(0).toUpperCase() + nameElement.slice(1).toLowerCase();
+                    const valorFormatado = `R$ ${valorCorrigido.toFixed(2).replace('.', ',')}`;
+                    let message = `Olá ${nameElement}, tudo bem? Aqui é da Pax Nippon. Estamos entrando em contato para lembrar que sua mensalidade referente a ${element.abreviacao}, no valor de ${valorFormatado}, vence hoje.\n\nPague pelo link: ${paymentUrl || 'indisponível no momento.'}`;
+
+                    return ws.sendMessage(numberUser, message);
+                })
+                .then(e => {
+                    console.log('Mensagem enviada com sucesso para:', numberUser);
+                    phoneNumbers.push(numberUser)
+                })
+                .catch(error => {
+                    console.log(error)
+                })
+                .finally(() => {
+                    setTimeout(next, numberAleatorio(60000, 120000));
+                });
         } else {
             return next();
         }
-        setTimeout(next, numberAleatorio(60000, 120000));
     }).then(() => {
         isSending = false;
     });

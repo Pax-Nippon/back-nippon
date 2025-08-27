@@ -468,15 +468,16 @@ async function getClientesByQuery(querys) {
         // Search by name (on 'clientes')
         if (querys?.nome) {
             const nameAux = querys.nome.toUpperCase();
-            const querySnap = await getDocs(
-                query(
-                    collection(db, "clientes"),
-                    where("nome_titular", ">=", nameAux),
-                    where("nome_titular", "<", nameAux + "\uf8ff")
-                )
-            );
+            // Buscar todos os clientes e filtrar localmente para suportar busca por "contém"
+            const querySnap = await getDocs(collection(db, "clientes"));
             const currentClientIds = new Set();
-            querySnap.forEach((doc) => currentClientIds.add(doc.id));
+            querySnap.forEach((doc) => {
+                const clienteData = doc.data();
+                // Verificar se o nome contém o termo de busca (case insensitive)
+                if (clienteData.nome_titular && clienteData.nome_titular.toUpperCase().includes(nameAux)) {
+                    currentClientIds.add(doc.id);
+                }
+            });
             clientIdsFromClients = currentClientIds;
         }
 
