@@ -24,6 +24,7 @@ const cemiterios = require('./controller/cemiterios');
 const medicosClinicas = require('./controller/medicosClinicas');
 const aplicativo = require('./controller/aplicativo');
 const redeConveniada = require('./controller/redeConveniada');
+const taxas = require('./controller/taxas');
 const schedule = require('node-schedule');
 const path = require('path');
 const { loginCliente } = require('./controller/clientes');
@@ -392,10 +393,10 @@ app.post('/clientes/verificarCpf', async (req, res) => {
     try {
         const result = await clientes.verificarCpf(cpf);
         console.log(result);
-        res.status(200).json(result);
+        res.json(result);
     } catch (error) {
         console.error("Erro na rota /clientes/verificarCpf:", error.message);
-        res.status(500).json({ error: "Erro ao verificar CPF" });
+        res.status(400).json({ message: 'error' });
     }
 });
 
@@ -825,6 +826,53 @@ app.delete('/api/departamentos/:id', verificarToken, havePermissionAdministrador
         res.status(500).json({ message: 'Erro ao deletar departamento' });
     }
 });
+
+
+
+//-----------------------------------------------------------Taxas-----------------------------------------------------------------------//
+app.get('/api/taxas', verificarToken, async (req, res) => {
+    try {
+        const data = await taxas.getTaxas();
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+});
+
+app.post('/api/taxas', verificarToken, async (req, res) => {
+    try {
+        const data = req.body;
+        console.log(data)
+        const result = await taxas.addTaxa(data);
+        res.json(result);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+});
+
+app.put('/api/taxas/:id', verificarToken, async (req, res) => {
+    try {
+        const data = req.body;
+        console.log(data)
+        const result = await taxas.updateTaxa(data);
+        res.json(result);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+});
+
+app.delete('/api/taxas/:id', verificarToken, async (req, res) => {
+    try {
+        const result = await taxas.deleteTaxa(req.params.id);
+        res.json(result);
+    } catch (error) {
+        res.status(400).json({ message: 'error' });
+    }
+});
+
+
+
+
 
 //-----------------------------------------------------------Logs-----------------------------------------------------------------------//
 app.post('/logs', verificarToken, async (req, res) => {

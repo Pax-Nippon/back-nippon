@@ -1,3 +1,6 @@
-2025/08/27-16:20:00.303 32cc Reusing MANIFEST C:\Users\guilh\OneDrive\Documentos\GitHub\back-nippon\sessions\session\Default\Local Storage\leveldb/MANIFEST-000001
-2025/08/27-16:20:00.303 32cc Recovering log #4
-2025/08/27-16:20:00.303 32cc Reusing old log C:\Users\guilh\OneDrive\Documentos\GitHub\back-nippon\sessions\session\Default\Local Storage\leveldb/000004.log 
+2025/08/29-16:20:00.615 a70 Reusing MANIFEST C:\Users\guilh\OneDrive\Documentos\GitHub\back-nippon\sessions\session\Default\Local Storage\leveldb/MANIFEST-000001
+2025/08/29-16:20:00.630 a70 Recovering log #4
+2025/08/29-16:20:00.630 a70 Reusing old log C:\Users\guilh\OneDrive\Documentos\GitHub\back-nippon\sessions\session\Default\Local Storage\leveldb/000004.log 
+2025/08/29-17:50:20.293 6cb4 Level-0 table #8: started
+2025/08/29-17:50:20.337 6cb4 Level-0 table #8: 15918 bytes OK
+2025/08/29-17:50:20.338 6cb4 Delete type=0 #4

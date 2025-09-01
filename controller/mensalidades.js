@@ -337,6 +337,19 @@ async function gerarMensalidade(data) {
         const mesFinal = parseInt(auxQntFinal[0]);
         const anoInicial = parseInt(auxQntInicial[1]);
         const anoFinal = parseInt(auxQntFinal[1]);
+
+        // Garante o dia de vencimento a partir do contrato (payload pode não trazer)
+        let diaVencimento = 1;
+        try {
+            const contratoRef = doc(db, "contratos", data.plano.id);
+            const contratoSnap = await getDoc(contratoRef);
+            if (contratoSnap.exists() && Number(contratoSnap.data().dia_vencimento)) {
+                diaVencimento = Number(contratoSnap.data().dia_vencimento);
+            }
+        } catch (_) {
+            // mantém padrão 1 em caso de falha
+        }
+
         let valorPlano = 0;
         let valorServico = 0;
         if (data.plano?.servicos?.length > 0) {
@@ -349,6 +362,33 @@ async function gerarMensalidade(data) {
                 }
                 valorPlano += valorServico;
             }
+        }
+        console.log(data)
+        
+        if(data.tipoTaxa?.value!==1){
+            // Gera mensalidades usando o valor informado e marca o tipo de taxa (label)
+            for (let ano = anoInicial; ano <= anoFinal; ano++) {
+                const mesInicio = (ano === anoInicial) ? mesInicial : 1;
+                const mesFim = (ano === anoFinal) ? mesFinal : 12;
+                for (let mes = mesInicio; mes <= mesFim; mes++) {
+                    const mensalidade = {
+                        idCliente: data.plano.idCliente,
+                        idContrato: data.plano.id,
+                        idPlano: data.plano.convenio,
+                        abreviacao: data.plano.abreviacao,
+                        id: uniKey(30),
+                        valor: data.valor,
+                        type: data.tipoTaxa,
+                        tipo_taxa: data.tipoTaxa?.label || null,
+                        paga: false,
+                        data: new Date(),
+                        dataVenc: new Date(ano, mes - 1, diaVencimento),
+                    };
+                    console.log(mensalidade)
+                    await setDoc(doc(db, "mensalidades", mensalidade.id), mensalidade);
+                }
+            }
+            return true;
         }
 
         if (data.plano.tipoValor === 1) {
@@ -372,11 +412,11 @@ async function gerarMensalidade(data) {
                     id: uniKey(30),
                     valor: valorPlano,
                     type: data.tipoTaxa,
+                    tipo_taxa: data.tipoTaxa?.label || null,
                     paga: false,
                     data: new Date(),
-                    dataVenc: new Date(ano, mes - 1, data.plano.dia_vencimento),
+                    dataVenc: new Date(ano, mes - 1, diaVencimento),
                 };
-                console.log(mensalidade)
                 await setDoc(doc(db, "mensalidades", mensalidade.id), mensalidade);
             }
         }
@@ -401,6 +441,7 @@ async function gerarMensalidadeUnica(data) {
             paga: false,
             data: new Date(),
             type: data.tipoTaxa,
+            tipo_taxa: data.tipoTaxa?.label || null,
             // Cria uma data UTC manualmente para evitar problemas de fuso horário, mas adiciona 2 dias para compensar o fuso
             dataVenc: new Date(Date.UTC(dataVencUTC.getFullYear(), dataVencUTC.getMonth(), dataVencUTC.getDate() + 2, 0, 0, 0, 0)),
         };
@@ -462,7 +503,7 @@ async function getClientesByQuery(querys) {
     try {
         let clientIdsFromContracts = null; // Use null to indicate no contract-based filtering yet
         let clientIdsFromClients = null;   // Use null to indicate no client-based filtering yet
-
+        console.log(querys)
         // --- Handle queries that directly affect the 'clientes' collection or can easily derive client IDs ---
 
         // Search by name (on 'clientes')
@@ -513,6 +554,22 @@ async function getClientesByQuery(querys) {
             const currentClientIds = new Set();
             querySnap.forEach((doc) => currentClientIds.add(doc.id));
 
+            if (clientIdsFromClients === null) {
+                clientIdsFromClients = currentClientIds;
+            } else {
+                // Intersect with existing clientIdsFromClients
+                clientIdsFromClients = new Set([...clientIdsFromClients].filter(id => currentClientIds.has(id)));
+            }
+        }
+        if (querys?.telefone) {
+            const querySnap = await getDocs(
+                query(
+                    collection(db, "clientes"),
+                    where("telefone_princ", "==", querys.telefone)
+                )
+            );
+            const currentClientIds = new Set();
+            querySnap.forEach((doc) => currentClientIds.add(doc.id));
             if (clientIdsFromClients === null) {
                 clientIdsFromClients = currentClientIds;
             } else {

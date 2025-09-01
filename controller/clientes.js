@@ -212,14 +212,10 @@ async function verificarCpf(cpf) {
         }
 
         const clienteRef = collection(db, "clientes");
-        const q = query(clienteRef, where("cpf", "==", cpf));
+        const q = query(clienteRef, where("cpf", "==", cpf), limit(1));
         const querySnapshot = await getDocs(q);
-
-        // Verifica se o cliente existe
-        if (!querySnapshot.empty) {
-            return false;
-        }
-        return true;
+        // Verdadeiro se achar, falso se não
+        return !querySnapshot.empty;
     } catch (error) {
         console.error("Erro ao verificar CPF:", error.message);
         throw new Error("Erro ao verificar CPF");
